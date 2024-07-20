@@ -24,6 +24,12 @@ addi 	s0, s0, 8
 	jal 	zero, LOOP
 LE:
 
+inicio:
+la t1, playerPos
+lw t2, 0(t1)
+addi t2, t2, 1
+sb t2, 0(t1)
+
 playerRender:
 la 	s0, playerPos
 lw 	t0, 0(s0) #posicao x
@@ -41,32 +47,71 @@ li	t3, 16 #ponto de parada
 	LOOPY:
 	bge 	t1, t3, LOOPYEND
 	#--------------
-	li t2, 0
+	li 	t2, 0
 		LOOPX:
-		bge t2, t3, LOOPXEND
+		bge 	t2, t3, LOOPXEND
 		#---------------------
 		mul 	t0, t3, t1
 		add 	t0, t0, t2 #pixel a ser mostrado
 		add 	t0, t0, s6
 		lb 	t0, 0(t0)
 		
-		li t5, 320
-		mul t4, t1, t5
-		add t4, t4, t2
-		add t4, t4, s0
+		li 	t5, 320
+		mul 	t4, t1, t5
+		add 	t4, t4, t2
+		add 	t4, t4, s0
 		
-		sb t0, 0(t4)
+		sb 	t0, 0(t4)
 		
 		
 		#---------------------
-		addi t2, t2, 1
-		jal zero, LOOPX
+		addi 	t2, t2, 1
+		jal 	zero, LOOPX
 	LOOPXEND:
 	#--------------
 	addi 	t1, t1, 1
 	jal 	zero, LOOPY
 LOOPYEND:
 
-jal zero, mapRender
+la t0, playerPos
+lb a0, 0(t0)
+lb a1, 4(t0)
+
+unrenderTile: #remove o tile da posição definida por a0, a1
+li 	s0, 320
+li 	s1, 0xff000000
+la s2, mapa
+addi s2, s2, 8
+
+li 	t1, 0 #contador do loop
+li 	t3, 16 #ponto de parada
+	LOOPUNY:
+	bge 	t1, t3, LOOPUNYEND
+	#----------------------
+	li 	t2, 0
+		LOOPUNX:
+		bge 	t2, t3, LOOPUNXEND
+		#----------------------
+		add t0, t1, a1 
+		mul t0, t0, s0
+		add t0, t0, a0
+		add t0, t0, t2
+
+		add t4, t0, s2
+		lb t5, 0(t4)
+
+		add t4, t0, s1
+		sb t5, 0(t4)
+			
+		#----------------------
+		addi 	t2, t2, 1
+		jal 	zero, LOOPUNX
+	LOOPUNXEND:
+	#----------------------
+	addi 	t1, t1, 1
+	jal 	zero, LOOPUNY
+LOOPUNYEND:
+
+jal 	zero, inicio
 
 
