@@ -1,57 +1,72 @@
 .data
-tela: .space 76800
-
-tile_16: .word 16, 16
-.byte 48,62,254,182,55,48,128,248,199,255,63,7,56,0,199,7,183,0,192,54,128,128,56,254,246,135,135,54,62,198,134,183,135,192,192,54,128,128,62,248,54,128,7,182,56,0,182,7,192,198,254,182,55,55,134,254,48,48,183,182,248,56,54,183,7,7,255,255,255,248,255,248,56,0,7,248,63,63,56,7,255,199,7,199,0,56,7,199,7,255,255,255,255,248,56,0,54,55,135,198,62,54,182,135,192,254,182,134,135,48,248,56,54,0,183,198,0,176,6,183,7,56,128,54,48,192,248,190,128,176,183,254,192,128,182,55,63,56,128,54,48,192,254,128,0,0,255,192,199,199,0,63,56,254,182,134,135,55,254,134,255,255,255,255,255,192,0,0,7,255,255,255,255,248,255,192,248,182,54,54,135,248,192,248,63,7,63,7,192,0,63,7,199,48,128,134,56,248,240,134,134,55,63,198,134,182,54,63,199,48,128,134,56,248,54,128,6,176,63,6,176,0,182,7,248,182,54,54,135,255,54,54,176,176,255,62,48,176,134,199,255,255,255,255,255,248,63,0,0,248,63,56,63,7,192,199,
+.include "mapa.data"
+.include "bloco.data"
+playerPos: .word 16, 16
 
 .text
+#beq, zero, zero, playerRender
+mapRender:
+li 	t1, 0
+li 	t2, 76800
+li	t0, 0xff000000
+la 	s0, mapa
+addi 	s0, s0, 8
 
-la s0, tela
-li s1, 0xff
-sb s1, 0(s0)
-sb s1, 12(s0)
-sb s1, 23(s0)
-START:
-jal RENDER
-jal START
+	LOOP: #esse loop coloca todos os valores na tela
+	bge 	t1, t2, LE
+	#-------------------
+	add 	t3, s0, t1
+	lb 	t4, 0(t3)
+	add 	t5, t0, t1
+	sb 	t4, 0(t5)
+	#-------------------
+	addi 	t1, t1, 1
+	jal 	zero, LOOP
+LE:
 
-RENDERTILE: #o_a0_recebe_a_coordenada_x_do_tile_e_o_a1_recebe_a_coordenada_y_do_tile
-        li t0, 16
-        mul s1, t0, a0 
-        li t0, 320
-        li t6, 320
-        mul s2, t0, a1
-        addi s1, s1, s2 #POSICAO_DE_ENTRADA
-        li t0, 16 #VALOR_DE_PARADA
-        li t1, 0 #CONTADOR
-        OUTERLOOP:
-                bge t1, t0, OLEND
-                li t2, 0
-                INNERLOOP:
-                        bge t2, t0, ILEND
-                        
+playerRender:
+la 	s0, playerPos
+lw 	t0, 0(s0) #posicao x
+lw 	t3, 4(s0) #posicao y
+li 	t4, 320
+mul 	s0, t3, t4
+add 	s0, s0, t0
+li 	t4, 0xff000000
 
-                        
-                        jal INNERLOOP
-                ILEND:
-                jal OUTERLOOP
-        OLEND:
+add 	s0, s0, t4 #posicao do player em espaço de memória
+la	s6, bloco
+addi	s6, s6, 8 #endereço da imagem do player
+li 	t1, 0 #contador do loop
+li	t3, 16 #ponto de parada
+	LOOPY:
+	bge 	t1, t3, LOOPYEND
+	#--------------
+	li t2, 0
+		LOOPX:
+		bge t2, t3, LOOPXEND
+		#---------------------
+		mul 	t0, t3, t1
+		add 	t0, t0, t2 #pixel a ser mostrado
+		add 	t0, t0, s6
+		lb 	t0, 0(t0)
+		
+		li t5, 320
+		mul t4, t1, t5
+		add t4, t4, t2
+		add t4, t4, s0
+		
+		sb t0, 0(t4)
+		
+		
+		#---------------------
+		addi t2, t2, 1
+		jal zero, LOOPX
+	LOOPXEND:
+	#--------------
+	addi 	t1, t1, 1
+	jal 	zero, LOOPY
+LOOPYEND:
 
-RENDER: #ESSA_FUNCAO_USA_t0_t1_t2_t6_s0_s1
-        mv t6, ra
-        li t1, 0 #CONTADOR
-        li t0, 76800 #VALOR_DE_PARADA
-        li t2, 0xff000000 #VALOR_DO_BITMAP
-        la s0, tela #ENDEREÇO_DA_TELA
-        
-        RENDLOOP:
-                bge t1, t0, RENDEND
-                lb s1, 0(s0)
-                sb s1, 0(t2)
-                addi s0, s0, 1
-                addi t2, t2, 1
-                addi t1, t1, 1
-                jal RENDLOOP
-        RENDEND:
-        mv ra, t6
-        ret
+jal zero, mapRender
+
+
