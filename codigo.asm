@@ -77,6 +77,10 @@ la t0, playerPos
 lb a0, 0(t0)
 lb a1, 4(t0)
 
+li a7, 32
+li a0, 20
+ecall
+
 unrenderTile: #remove o tile da posição definida por a0, a1
 li 	s0, 320
 li 	s1, 0xff000000
