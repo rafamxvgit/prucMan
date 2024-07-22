@@ -3,25 +3,49 @@
 .include "mapa.data"
 .include "bloco.data"
 playerPos: .word 16, 16
+playerMove: .byte 1, 0
 
 .text
-
-li s11, 0
 
 la a0, mapa
 addi a0, a0, 8
 jal, mapRender
 
 start:
-addi s11, s11, 1
 
-mv a0, s11
-li a1, 16
+jal readKeyboard
+
+la t0, playerMove
+la t1, playerPos
+
+lw s10, 0(t1)
+lw s11, 4(t1)
+lb s0, 0(t0)
+lb s1, 1(t0)
+
+# muda a posição do player
+add s10, s10, s0
+add s11, s11, s1
+
+sw s10, 0(t1)
+sw s11, 4(t1)
+
+# renderiza o player
+mv a0, s10
+mv a1, s11
 la a2, bloco
 addi a2, a2, 8
 jal tileRender
 
+# espera um tempinho
+li a7, 32
+li a0, 20
+ecall
 
+# desrenderiza o player
+la t1, playerPos
+lw a0, 0(t1)
+lw a1, 4(t1)
 la a2, mapa
 addi a2, a2, 8
 jal tileUnrender
@@ -30,6 +54,8 @@ jal start
 end:
 
 #definição de funções:
+
+
 
 ##################
 # a0 -> o endereço de memória do primeiro pixel do 
@@ -153,3 +179,42 @@ ret
 
 #1. endereço da tela
 #2. posição do primeiro pixel em relativo ao mapa ou à tela
+
+readKeyboard:
+mv s6, ra
+li s0, 0xff200000
+lw s1, 0(s0)
+andi s1, s1, 1 #bit de controle
+lw s2, 4(s0) #tecla pressionada
+la s5, playerMove
+li s3, 1 # <- o número 1 :)
+li s4, -1 # <- o número -1 :)
+beq s1, zero, EP1
+	#caso alguma coisa tenha sido teclada execute isso aqui
+	li t0, 119
+	bne s2, t0, EP2
+		sb zero, 0(s5)
+		sb s4, 1(s5)
+	EP2:
+	
+	li t0, 97
+	bne s2, t0, EP3
+		sb s4, 0(s5)
+		sb zero, 1(s5)
+	EP3:
+	
+	li t0, 115
+	bne s2, t0, EP4
+		sb zero, 0(s5)
+		sb s3, 1(s5)
+	EP4:
+	
+	li t0, 100
+	bne s2, t0, EP5
+		sb s3, 0(s5)
+		sb zero, 1(s5)
+	EP5:
+EP1:
+mv ra, s6
+ret
+
