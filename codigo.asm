@@ -1,6 +1,6 @@
 .data
 
-.include "mapa.data"
+.include "mapa2.data"
 .include "bloco.data"
 .include "colisao.data"
 
@@ -10,7 +10,7 @@ playerMove: .byte 0
 
 .text
 
-la a0, mapa
+la a0, mapa2
 addi a0, a0, 8
 jal, mapRender
 
@@ -20,10 +20,9 @@ start:
 jal readKeyboard
 
 #define a movimentação do player
-#TODO
+
 
 #movimenta o player
-#TODO
 
 # renderiza o player
 mv a0, s10
@@ -41,7 +40,7 @@ ecall
 la t1, playerPos
 lw a0, 0(t1)
 lw a1, 4(t1)
-la a2, mapa
+la a2, mapa2
 addi a2, a2, 8
 jal tileUnrender
 
@@ -224,48 +223,94 @@ ret
 ###############################################
 # retorna 1 no a 0 caso o caminho não esteja obstruido
 
-CheckMapColision:
+CheckMapCollision: #TODO: comentar essa porra dessa função
 mv s6, ra
 la s0, playerPos
 lb s1, 0(s0) # posição x do player
 lb s2, 4(s0) # posição y do player
 la s0, colisao
+addi s0, s0, 8
+
 li s4, 255 
 
 li t0, 320
-mul s3, s2, 320
-addi s3, s3, s1
-addi s3, s3, s0 # esse é o endereço do player no mapa de colisão
+mul s3, s2, t0
+add s3, s3, s1
+add s3, s3, s0 # esse é o endereço do player no mapa de colisão
 
 
 bne a0, zero, EP6
-	addi t3, s3, 32
+	addi t3, s3, 16
 	lb t4, 0(t3)
 	bne t4, zero, EP10
-		addi t3, s3, 9952
+		li t6, 4816
+		add t3, s3, t6
 		lb t4, 0(t3)
 		bne t4, zero, EP10
 			li a0, 1
 			mv ra, s6
 			ret
 	EP10:
+	mv a0, zero
+	mv ra, s6
+	ret
 EP6:
 
 
 li t0, 1
 bne a0, t0, EP7
-
+	addi t3, s3, -320
+	lb t4, 0(t3)
+	bne t4, zero, EP11
+		addi t3, s3, -205
+		lb t4, 0(t3)
+		bne t4, zero, EP11
+			li a0, 1
+			mv ra, s6
+			ret
+		
+	EP11:
+	mv a0, zero
+	mv ra, s6
+	ret
 EP7:
 
 
 li t0, 2
 bne a0, t0, EP8
-
+	addi t3, s3, -1
+	lb t4, 0(t3)
+	bne t4, zero, EP12
+		li t6, 4799
+		add t3, s3, t6
+		lb t4, 0(t3)
+		bne t4, zero, EP12
+			li a0, 1
+			mv ra, s6
+			ret
+	EP12: 
+	mv a0, zero
+	mv ra, s6
+	ret
 EP8:
 
 
 li, t0, 3
 bne a0, t0, EP9
-
+	li t6, 5120
+	add t3, s3, t6
+	lb t4, 0(t3)
+	bne t4, zero, EP13
+		li t6, 5135
+		add t3, s3, t6
+		lb t4, 0(t3)
+		bne t4, zero, EP13
+			li a0, 1
+			mv ra, s6
+			ret
+	EP13:
+	mv a0, zero
+	mv ra, s6
+	ret
 EP9:
 
