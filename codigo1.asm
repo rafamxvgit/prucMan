@@ -2,6 +2,7 @@
 
 .include "mapa.data"
 .include "bloco.data"
+.include "colisao.data"
 playerPos: .word 16, 16
 playerMove: .byte 1, 0
 

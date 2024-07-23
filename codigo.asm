@@ -1,121 +1,271 @@
 .data
+
 .include "mapa.data"
 .include "bloco.data"
+.include "colisao.data"
+
 playerPos: .word 16, 16
+playerIntention: .byte 0
+playerMove: .byte 0
 
 .text
-#beq, zero, zero, playerRender
-mapRender:
-li 	t1, 0
-li 	t2, 76800
-li	t0, 0xff000000
-la 	s0, mapa
-addi 	s0, s0, 8
 
-	LOOP: #esse loop coloca todos os valores na tela
-	bge 	t1, t2, LE
-	#-------------------
-	add 	t3, s0, t1
-	lb 	t4, 0(t3)
-	add 	t5, t0, t1
-	sb 	t4, 0(t5)
-	#-------------------
-	addi 	t1, t1, 1
-	jal 	zero, LOOP
-LE:
+la a0, mapa
+addi a0, a0, 8
+jal, mapRender
 
-inicio:
-la t1, playerPos
-lw t2, 0(t1)
-addi t2, t2, 1
-sb t2, 0(t1)
+start:
 
-playerRender:
-la 	s0, playerPos
-lw 	t0, 0(s0) #posicao x
-lw 	t3, 4(s0) #posicao y
-li 	t4, 320
-mul 	s0, t3, t4
-add 	s0, s0, t0
-li 	t4, 0xff000000
+# lê a intenção do player
+jal readKeyboard
 
-add 	s0, s0, t4 #posicao do player em espaço de memória
-la	s6, bloco
-addi	s6, s6, 8 #endereço da imagem do player
-li 	t1, 0 #contador do loop
-li	t3, 16 #ponto de parada
-	LOOPY:
-	bge 	t1, t3, LOOPYEND
-	#--------------
-	li 	t2, 0
-		LOOPX:
-		bge 	t2, t3, LOOPXEND
-		#---------------------
-		mul 	t0, t3, t1
-		add 	t0, t0, t2 #pixel a ser mostrado
-		add 	t0, t0, s6
-		lb 	t0, 0(t0)
-		
-		li 	t5, 320
-		mul 	t4, t1, t5
-		add 	t4, t4, t2
-		add 	t4, t4, s0
-		
-		sb 	t0, 0(t4)
-		
-		
-		#---------------------
-		addi 	t2, t2, 1
-		jal 	zero, LOOPX
-	LOOPXEND:
-	#--------------
-	addi 	t1, t1, 1
-	jal 	zero, LOOPY
-LOOPYEND:
+#define a movimentação do player
+#TODO
 
-la t0, playerPos
-lb a0, 0(t0)
-lb a1, 4(t0)
+#movimenta o player
+#TODO
 
+# renderiza o player
+mv a0, s10
+mv a1, s11
+la a2, bloco
+addi a2, a2, 8
+jal tileRender
+
+# espera um tempinho
 li a7, 32
 li a0, 20
 ecall
 
-unrenderTile: #remove o tile da posição definida por a0, a1
-li 	s0, 320
-li 	s1, 0xff000000
-la s2, mapa
-addi s2, s2, 8
+# desrenderiza o player
+la t1, playerPos
+lw a0, 0(t1)
+lw a1, 4(t1)
+la a2, mapa
+addi a2, a2, 8
+jal tileUnrender
 
-li 	t1, 0 #contador do loop
-li 	t3, 16 #ponto de parada
-	LOOPUNY:
-	bge 	t1, t3, LOOPUNYEND
-	#----------------------
-	li 	t2, 0
-		LOOPUNX:
-		bge 	t2, t3, LOOPUNXEND
-		#----------------------
-		add t0, t1, a1 
-		mul t0, t0, s0
-		add t0, t0, a0
+jal start
+end:
+
+#definição de funções:
+
+
+
+##################
+# a0 -> o endereço de memória do primeiro pixel do 
+# mapa a ser renderizado
+##################
+
+mapRender:
+mv s6, ra
+li s0, 76800 #1.
+li s1, 0xff000000 #2.
+li t1, 0
+LP1:
+bge t1, s0, LE1
+#---------------
+add t0, a0, t1
+lb t3, 0(t0)
+add t0, s1, t1
+sb t3, 0(t0)
+#---------------
+addi t1, t1, 1
+jal LP1 
+LE1:
+mv ra, s6
+ret
+
+#1. numero de pixeis
+#2. #endereço da tela
+
+
+
+###########################################
+# a0 -> posição x do tile
+# a1 -> posição y do tile
+# a2 -> endereço do primeiro pixel do tile
+###########################################
+
+tileRender:
+mv s6, ra
+li s0, 16
+li s1, 320
+li s3, 0xff000000
+mul s2, a1, s1
+add s2, s2, a0 # 1.
+add s2, s2, s3
+
+li t1, 0
+	LP2:
+	bge t1, s0, LE2
+	#--------------
+	li t2, 0
+		LP3:
+		bge t2, s0, LE3
+		#--------------
+		slli t0, t1, 4
 		add t0, t0, t2
+		add t0, t0, a2 # 2.
+		lb t3, 0(t0)
 
-		add t4, t0, s2
-		lb t5, 0(t4)
+		mul t0, t1, s1
+		add t0, t0, t2
+		add t0, t0, s2 # 3.
+		sb t3, 0(t0)
+		#--------------
+		addi t2, t2, 1
+		jal LP3
+	LE3:
+	#--------------
+	addi t1, t1, 1
+	jal LP2
+LE2:
+mv ra, s6
+ret
 
-		add t4, t0, s1
-		sb t5, 0(t4)
-			
-		#----------------------
-		addi 	t2, t2, 1
-		jal 	zero, LOOPUNX
-	LOOPUNXEND:
-	#----------------------
-	addi 	t1, t1, 1
-	jal 	zero, LOOPUNY
-LOOPUNYEND:
+#1. s2 <- endereço do primeiro pixel no qual o tile deve ser renderizado
+#2. t0 <- endereço do pixel no tile
+#3. t0 <- endereço do pixel no qual o tile deve ser renderizado
 
-jal 	zero, inicio
 
+###########################################
+# a0 -> posição x do tile
+# a1 -> posição y do tile
+# a2 -> endereço do primeiro pixel do mapa
+###########################################
+
+
+tileUnrender:
+mv s6, ra
+li s0, 16
+li s1, 320
+li s3, 0xff000000 #1.
+mul s2, a1, s1
+add s2, s2, a0 #2.
+
+li t1, 0
+	LP4:
+	bge t1, s0, LE4
+	#--------------
+	li, t2, 0
+		LP5:
+		bge t2, s0, LE5
+		#--------------
+		mul t0, t1, s1
+		add t0, t0, t2
+		add t0, t0, s2
+
+		add t3, t0, a2
+		lb t4, 0(t3)
+		add t3, t0, s3
+		sb t4, 0(t3)
+
+		#--------------
+		addi t2, t2, 1
+		jal LP5
+	LE5:
+	#--------------
+	addi t1, t1, 1
+	jal LP4
+LE4:
+mv ra, s6
+ret
+
+#1. endereço da tela
+#2. posição do primeiro pixel em relativo ao mapa ou à tela
+
+readKeyboard:
+mv s6, ra
+li s0, 0xff200000
+lw s1, 0(s0)
+andi s1, s1, 1 #bit de controle
+lw s2, 4(s0) #tecla pressionada
+la s5, playerIntention
+beq s1, zero, EP1
+	#caso alguma coisa tenha sido teclada execute isso aqui
+	li t0, 119
+	bne s2, t0, EP2
+		li s3, 1
+		sb s3, 0(s5)
+	EP2:
+	
+	li t0, 97
+	bne s2, t0, EP3
+		li s3, 2
+		sb s3, 0(s5)
+	EP3:
+	
+	li t0, 115
+	bne s2, t0, EP4
+		li s3, 3
+		sb s3, 0(s5)
+	EP4:
+	
+	li t0, 100
+	bne s2, t0, EP5
+		sb zero, 0(s5)
+	EP5:
+EP1:
+mv ra, s6
+ret
+
+
+playerMovement:
+mv s6, ra
+la s0, colisao
+addi s0, s0, 8 #mapa de colisão
+
+mv ra, s6
+ret
+
+###############################################
+# a0 <- recebe a direção de checagem da colisão
+###############################################
+# retorna 1 no a 0 caso o caminho não esteja obstruido
+
+CheckMapColision:
+mv s6, ra
+la s0, playerPos
+lb s1, 0(s0) # posição x do player
+lb s2, 4(s0) # posição y do player
+la s0, colisao
+li s4, 255 
+
+li t0, 320
+mul s3, s2, 320
+addi s3, s3, s1
+addi s3, s3, s0 # esse é o endereço do player no mapa de colisão
+
+
+bne a0, zero, EP6
+	addi t3, s3, 32
+	lb t4, 0(t3)
+	bne t4, zero, EP10
+		addi t3, s3, 9952
+		lb t4, 0(t3)
+		bne t4, zero, EP10
+			li a0, 1
+			mv ra, s6
+			ret
+	EP10:
+EP6:
+
+
+li t0, 1
+bne a0, t0, EP7
+
+EP7:
+
+
+li t0, 2
+bne a0, t0, EP8
+
+EP8:
+
+
+li, t0, 3
+bne a0, t0, EP9
+
+EP9:
 
