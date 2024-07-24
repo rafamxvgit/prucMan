@@ -273,8 +273,8 @@ jal rotateClock
 jal CheckMapCollision
 beq a0, zero, EP18
 	la s1, playerMove
-	lb s1, 0(s1)
-	mv a0, s1
+	lb s2, 0(s1)
+	mv a0, s2
 	jal rotateClock
 	sb a0, 0(s1)
 	mv ra, s7
