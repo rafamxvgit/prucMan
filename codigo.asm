@@ -1,12 +1,13 @@
 .data
 playerIntention: .byte 0
 playerMove: .byte 0
+playerPos: .word 16, 16
 
 .include "mapa2.data"
 .include "bloco.data"
 .include "colisao.data"
 
-playerPos: .word 16, 16
+
 
 
 .text
@@ -27,30 +28,30 @@ jal playerMovement
 la s0, playerPos
 la s3, playerMove
 lb s3, 0(s3)
-lb s1, 0(s0)
-lb s2, 4(s0)
+lw s1, 0(s0)
+lw s2, 4(s0)
 li t0, 0
 bne s3, t0, EP20
 	addi s1, s1, 1
-	sb s1, 0(s0)
+	sw s1, 0(s0)
 EP20:
 
 li t0, 1
 bne s3, t0, EP21
 	addi s2, s2, -1
-	sb s2, 4(s0)
+	sw s2, 4(s0)
 EP21:
 
 li t0, 2
 bne s3, t0, EP22
 	addi s1, s1, -1
-	sb s1, 0(s0)
+	sw s1, 0(s0)
 EP22:
 
 li t0, 3
 bne s3, t0 EP23
 	addi s2, s2, 1
-	sb s2, 4(s0)
+	sw s2, 4(s0)
 EP23:
 
 # renderiza o player
@@ -284,13 +285,14 @@ EP18:
 la s1, playerMove
 lb s1, 0(s1)
 mv a0, s1
-jal rotateClock
+jal rotateCounter
 jal CheckMapCollision
 beq a0, zero, EP19
 	la s1, playerMove
 	lb s1, 0(s1)
 	mv a0, s1
-	jal rotateClock
+	jal rotateCounter
+	la s1, playerMove
 	sb a0, 0(s1)
 	mv ra, s7
 	ret
