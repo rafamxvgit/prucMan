@@ -1,12 +1,13 @@
 .data
+playerIntention: .byte 0
+playerMove: .byte 0
 
 .include "mapa2.data"
 .include "bloco.data"
 .include "colisao.data"
 
 playerPos: .word 16, 16
-playerIntention: .byte 0
-playerMove: .byte 0
+
 
 .text
 
@@ -20,13 +21,41 @@ start:
 jal readKeyboard
 
 #define a movimentação do player
-
+jal playerMovement
 
 #movimenta o player
+la s0, playerPos
+la s3, playerMove
+lb s3, 0(s3)
+lb s1, 0(s0)
+lb s2, 4(s0)
+li t0, 0
+bne s3, t0, EP20
+	addi s1, s1, 1
+	sb s1, 0(s0)
+EP20:
+
+li t0, 1
+bne s3, t0, EP21
+	addi s2, s2, -1
+	sb s2, 4(s0)
+EP21:
+
+li t0, 2
+bne s3, t0, EP22
+	addi s1, s1, -1
+	sb s1, 0(s0)
+EP22:
+
+li t0, 3
+bne s3, t0 EP23
+	addi s2, s2, 1
+	sb s2, 4(s0)
+EP23:
 
 # renderiza o player
-mv a0, s10
-mv a1, s11
+mv a0, s1
+mv a1, s2
 la a2, bloco
 addi a2, a2, 8
 jal tileRender
@@ -211,11 +240,65 @@ ret
 
 
 playerMovement:
-mv s6, ra
-la s0, colisao
-addi s0, s0, 8 #mapa de colisão
+mv s7, ra
+la s0, playerIntention
+lb s0, 0(s0)
+la s1, playerMove
+lb s1, 0(s1)
+mv a0, s0
+jal CheckMapCollision
+beq a0, zero, EP14
+	la s1, playerMove
+	la s0, playerIntention
+	lb s0, 0(s0)
+	sb s0, 0(s1)
+	mv ra, s7
+	ret
+EP14:
 
-mv ra, s6
+la s1, playerMove
+lb s1, 0(s1)
+mv a0, s1
+jal CheckMapCollision
+beq a0, zero, EP15
+	mv ra, s7
+	ret
+EP15:
+
+la s1, playerMove
+lb s1, 0(s1)
+mv a0, s1
+jal rotateClock
+jal CheckMapCollision
+beq a0, zero, EP18
+	la s1, playerMove
+	lb s1, 0(s1)
+	mv a0, s1
+	jal rotateClock
+	sb a0, 0(s1)
+	mv ra, s7
+	ret
+EP18:
+
+
+la s1, playerMove
+lb s1, 0(s1)
+mv a0, s1
+jal rotateClock
+jal CheckMapCollision
+beq a0, zero, EP19
+	la s1, playerMove
+	lb s1, 0(s1)
+	mv a0, s1
+	jal rotateClock
+	sb a0, 0(s1)
+	mv ra, s7
+	ret
+EP19:
+
+
+mv ra, s7
+
 ret
 
 ###############################################
@@ -314,3 +397,26 @@ bne a0, t0, EP9
 	ret
 EP9:
 
+rotateClock:
+mv s6, ra
+li t0, 3
+bne t0, a0, EP16
+	mv a0, zero
+	mv ra, s6
+	ret
+EP16:
+addi a0, a0, 1
+mv ra, s6
+ret
+
+rotateCounter:
+mv s6, ra
+li t0, 3
+bne zero, a0, EP17
+	mv a0, t0
+	mv ra, s6
+	ret
+EP17:
+addi a0, a0, -1
+mv ra, s6
+ret
