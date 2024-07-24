@@ -311,8 +311,8 @@ ret
 CheckMapCollision: #TODO: comentar essa porra dessa função
 mv s6, ra
 la s0, playerPos
-lb s1, 0(s0) # posição x do player
-lb s2, 4(s0) # posição y do player
+lw s1, 0(s0) # posição x do player
+lw s2, 4(s0) # posição y do player
 la s0, colisao
 addi s0, s0, 8
 
