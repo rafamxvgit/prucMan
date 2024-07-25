@@ -298,6 +298,23 @@ beq a0, zero, EP19
 	ret
 EP19:
 
+la s1, playerMove
+lb s1, 0(s1)
+mv a0, s1
+jal rotateClock
+jal rotateClock
+jal CheckMapCollision
+beq a0, zero, EP24
+	la s1, playerMove
+	lb s2, 0(s1)
+	mv a0, s2
+	jal rotateClock
+	jal rotateClock
+	sb a0, 0(s1)
+	mv ra, s7
+	ret
+EP24:
+
 
 mv ra, s7
 
@@ -347,7 +364,7 @@ bne a0, t0, EP7
 	addi t3, s3, -320
 	lb t4, 0(t3)
 	bne t4, zero, EP11
-		addi t3, s3, -205
+		addi t3, s3, -305
 		lb t4, 0(t3)
 		bne t4, zero, EP11
 			li a0, 1
