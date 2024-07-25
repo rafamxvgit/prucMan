@@ -277,6 +277,8 @@ beq a0, zero, EP18
 	mv a0, s2
 	jal rotateClock
 	sb a0, 0(s1)
+	la s1, playerIntention
+	sb a0, 0(s1)
 	mv ra, s7
 	ret
 EP18:
@@ -294,6 +296,8 @@ beq a0, zero, EP19
 	jal rotateCounter
 	la s1, playerMove
 	sb a0, 0(s1)
+	la s1, playerIntention
+	sb a0, 0(s1)
 	mv ra, s7
 	ret
 EP19:
@@ -310,6 +314,8 @@ beq a0, zero, EP24
 	mv a0, s2
 	jal rotateClock
 	jal rotateClock
+	sb a0, 0(s1)
+	la s1, playerIntention
 	sb a0, 0(s1)
 	mv ra, s7
 	ret
