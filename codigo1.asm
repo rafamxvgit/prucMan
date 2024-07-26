@@ -2,7 +2,9 @@
 playerIntention: .byte 0
 playerMove: .byte 0
 playerPos: .word 16, 16
+counterNaoMexe: .byte 0
 lastPlayerPos: .word 16, 16
+
 
 .include "mapa2.data"
 .include "bloco.data"
@@ -15,6 +17,26 @@ addi a0, a0, 8
 jal, mapRender
 
 start:
+
+#checa certos casos especiais
+la a0, playerPos
+jal checkLeftEnd
+
+
+la t0, counterNaoMexe
+lb t0, 0(t0)
+bne t0, zero, EP26
+ 
+	# lê a intenção do player
+	jal readKeyboard
+
+	#define a movimentação do player
+	jal playerMovement
+
+EP26:
+
+#movimenta o player
+jal changePlayerPos
 
 # desrenderiza o player
 la t1, lastPlayerPos
@@ -32,19 +54,18 @@ la a2, bloco
 addi a2, a2, 8
 jal tileRender
 
-# lê a intenção do player
-jal readKeyboard
-
-#define a movimentação do player
-jal playerMovement
-
-#movimenta o player
-jal changePlayerPos
-
 # espera um tempinho
 li a7, 32
 li a0, 20
 ecall
+
+#decrementa o counterNaoMexe
+la t0, counterNaoMexe
+lb t1, 0(t0)
+bge zero, t1, EP27
+	addi t1, t1, -1
+	sb t1, 0(t0)
+EP27:
 
 jal start
 end:
@@ -437,4 +458,18 @@ bne s3, t0 EP23
 	sw s2, 4(s0)
 EP23:
 mv ra, s6
+ret
+
+#a0 <- passa o endereço posição da entidade a se checar
+
+checkLeftEnd:
+mv s7, ra
+lw s1, 0(a0)
+lw s2, 4(a0)
+bne s1, zero, EP25 
+	la t0, counterNaoMexe
+	li t2, 16
+	sb t2, 0(t0)	
+EP25:
+mv ra, s7
 ret
