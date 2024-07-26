@@ -51,8 +51,6 @@ end:
 
 #definição de funções:
 
-
-
 ##################
 # a0 -> o endereço de memória do primeiro pixel do 
 # mapa a ser renderizado
@@ -216,8 +214,6 @@ playerMovement:
 mv s7, ra
 la s0, playerIntention
 lb s0, 0(s0)
-la s1, playerMove
-lb s1, 0(s1)
 mv a0, s0
 jal CheckMapCollision
 beq a0, zero, EP14
@@ -229,24 +225,20 @@ beq a0, zero, EP14
 	ret
 EP14:
 
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s1
+la a0, playerMove
+lb a0, 0(a0)
 jal CheckMapCollision
 beq a0, zero, EP15
 	mv ra, s7
 	ret
 EP15:
-
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s1
+la a0, playerMove
+lb a0, 0(a0)
 jal rotateClock
 jal CheckMapCollision
 beq a0, zero, EP18
 	la s1, playerMove
-	lb s2, 0(s1)
-	mv a0, s2
+	lb a0, 0(s1)
 	jal rotateClock
 	sb a0, 0(s1)
 	la s1, playerIntention
@@ -256,17 +248,14 @@ beq a0, zero, EP18
 EP18:
 
 
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s1
+la a0, playerMove
+lb a0, 0(a0)
 jal rotateCounter
 jal CheckMapCollision
 beq a0, zero, EP19
 	la s1, playerMove
-	lb s1, 0(s1)
-	mv a0, s1
+	lb a0, 0(s1)
 	jal rotateCounter
-	la s1, playerMove
 	sb a0, 0(s1)
 	la s1, playerIntention
 	sb a0, 0(s1)
@@ -274,28 +263,22 @@ beq a0, zero, EP19
 	ret
 EP19:
 
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s1
+la a0, playerMove
+lb a0, 0(a0)
 jal rotateClock
 jal rotateClock
+mv s10, a0
 jal CheckMapCollision
 beq a0, zero, EP24
 	la s1, playerMove
-	lb s2, 0(s1)
-	mv a0, s2
-	jal rotateClock
-	jal rotateClock
-	sb a0, 0(s1)
+	sb s10, 0(s1)
 	la s1, playerIntention
-	sb a0, 0(s1)
+	sb s10, 0(s1)
 	mv ra, s7
 	ret
 EP24:
 
-
 mv ra, s7
-
 ret
 
 ###############################################
