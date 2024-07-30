@@ -21,6 +21,7 @@ start:
 #checa certos casos especiais
 la a0, playerPos
 jal checkLeftEnd
+jal checkRightEnd
 
 
 la t0, counterNaoMexe
@@ -464,12 +465,54 @@ ret
 
 checkLeftEnd:
 mv s7, ra
+la t1, mapa2
+addi t1, t1, 8
 lw s1, 0(a0)
 lw s2, 4(a0)
-bne s1, zero, EP25 
+la s3, playerMove
+lb s3, 0(s3)
+li t3, 2
+bne s3, t3, EP25
+bne s1, zero, EP25
 	la t0, counterNaoMexe
 	li t2, 16
-	sb t2, 0(t0)	
+	sb t2, 0(t0)
+	li t4, 320
+	add s4, s1, t4
+	sw s4, 0(a0)
+	mv a0, s1
+	mv a1, s2
+	mv a2, t1
+	jal tileUnrender
 EP25:
+
+mv ra, s7
+ret
+
+
+#a0 <- passa o endereço posição da entidade a se checar
+
+checkRightEnd:
+mv s7, ra
+la t1, mapa2
+addi t1, t1, 8
+lw s1, 0(a0)
+lw s2, 4(a0)
+la s3, playerMove
+lb s3, 0(s3)
+li t0, 304
+bne s3, zero, EP28
+bne s1, t0, EP28
+	la, t0, counterNaoMexe
+	li t2, 16
+	sb t2, 0(t0)
+	li t4, -320
+	add s4, s1, t4
+	sw s4, 0(a0) 
+	mv a0, s1
+	mv a1, s2
+	mv a2, t1
+	jal tileUnrender
+EP28:
 mv ra, s7
 ret
