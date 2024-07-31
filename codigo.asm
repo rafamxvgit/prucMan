@@ -3,6 +3,12 @@ playerMove: .byte 0
 playerIntention: .byte 0
 playerPos: .word 16, 16
 playerLastPos: .word 16, 16
+
+enm1Move: .byte 0
+enm1Intention: .byte 0
+enm1Pos: .word 32, 16
+enm1LastPos: .word 32, 16
+
 counterNaoMexe: .byte 0
 
 fnMem1: .word 0,0,0,0,0,0,0,0
@@ -43,13 +49,36 @@ bne t0, zero, EP26
 
 EP26:
 
+#define a movimentação do inimigo
+la a0, enm1Intention
+la a1, enm1Move
+la a2, enm1Pos
+la a3, colisao
+addi a3, a3, 8
+jal entityMove
+
+#altera a posição do player
 la a0, playerPos
 la a1, playerLastPos
 la a2, playerMove
 jal changeEntityPos
 
+#altera a posição do inimigo
+la a0, enm1Pos
+la a1, enm1LastPos
+la a2, enm1Move
+jal changeEntityPos
+
 # desrenderiza o player
 la t1, playerLastPos
+lw a0, 0(t1)
+lw a1, 4(t1)
+la a2, mapa2
+addi a2, a2, 8
+jal tileUnrender
+
+#desrenderiza o inimigo
+la t1, enm1LastPos
 lw a0, 0(t1)
 lw a1, 4(t1)
 la a2, mapa2
@@ -61,6 +90,14 @@ la t0, playerPos
 lw a0, 0(t0)
 lw a1, 4(t0)
 la a2, bloco
+addi a2, a2, 8
+jal tileRender
+
+#renderiza o inimigo
+la t0, enm1Pos
+lw a0, 0(t0)
+lw a1, 4(t0)
+la a2, gato1
 addi a2, a2, 8
 jal tileRender
 
