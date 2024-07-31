@@ -1,14 +1,22 @@
 .data
+enemy1Pos: .word 32, 16
+enemy1Intention: .byte 0
+enemy1Move: .byte 0
 playerIntention: .byte 0
 playerMove: .byte 0
 playerPos: .word 16, 16
 counterNaoMexe: .byte 0
 lastPlayerPos: .word 16, 16
-
+lastEnemy1Pos: .word 32, 16
+enemy2Pos: .word 64, 16
+lastEnemy2Pos: .word 64, 16
+enemy2Intention: .byte 0
+enemy2Move: .byte 0
 
 .include "mapa2.data"
 .include "bloco.data"
 .include "colisao.data"
+.include "gato1.data"
 
 .text
 
@@ -31,13 +39,34 @@ bne t0, zero, EP26
 	# lê a intenção do player
 	jal readKeyboard
 
+	
 	#define a movimentação do player
 	jal playerMovement
 
+
+	#define a movimentação do inimigo
+	la a0, enemy1Intention
+	la a1, enemy1Move
+	la a2, enemy1Pos
+	jal enemyMovement
+
 EP26:
+
+#movimenta o inimigo
+la t0, enemy1Move
+la t1, enemy1Pos
+jal changeEnemyPos
 
 #movimenta o player
 jal changePlayerPos
+
+# desrenderiza o inimigo
+la t1, lastEnemy1Pos
+lw a0, 0(t1)
+lw a1, 4(t1)
+la a2, mapa2
+addi a2, a2, 8
+jal tileUnrender
 
 # desrenderiza o player
 la t1, lastPlayerPos
@@ -46,6 +75,14 @@ lw a1, 4(t1)
 la a2, mapa2
 addi a2, a2, 8
 jal tileUnrender
+
+# renderiza o inimigo
+la t0, enemy1Pos
+lw a0, 0(t0)
+lw a1, 4(t0)
+la a2, gato1
+addi a2, a2, 8
+jal tileRender
 
 # renderiza o player
 la t0, playerPos
@@ -515,4 +552,201 @@ bne s1, t0, EP28
 	jal tileUnrender
 EP28:
 mv ra, s7
+ret
+
+
+#a1 <- posiçãoInimigo
+
+CheckEnemyMapCollision: #TODO: comentar essa porra dessa função
+mv s6, ra
+mv s0, a1
+lw s1, 0(s0) # posição x do inimigo
+lw s2, 4(s0) # posição y do inimigo
+la s0, colisao
+addi s0, s0, 8
+
+li s4, 255 
+
+li t0, 320
+mul s3, s2, t0
+add s3, s3, s1
+add s3, s3, s0 # esse é o endereço do player no mapa de colisão
+
+bne a0, zero, EP33
+	addi t3, s3, 16
+	lb t4, 0(t3)
+	bne t4, zero, EP34
+		li t6, 4816
+		add t3, s3, t6
+		lb t4, 0(t3)
+		bne t4, zero, EP34
+			li a0, 1
+			mv ra, s6
+			ret
+	EP34:
+	mv a0, zero
+	mv ra, s6
+	ret
+EP33:
+
+
+li t0, 1
+bne a0, t0, EP35
+	addi t3, s3, -320
+	lb t4, 0(t3)
+	bne t4, zero, EP36
+		addi t3, s3, -305
+		lb t4, 0(t3)
+		bne t4, zero, EP36
+			li a0, 1
+			mv ra, s6
+			ret
+		
+	EP36:
+	mv a0, zero
+	mv ra, s6
+	ret
+EP35:
+
+
+li t0, 2
+bne a0, t0, EP37
+	addi t3, s3, -1
+	lb t4, 0(t3)
+	bne t4, zero, EP38
+		li t6, 4799
+		add t3, s3, t6
+		lb t4, 0(t3)
+		bne t4, zero, EP38
+			li a0, 1
+			mv ra, s6
+			ret
+	EP38: 
+	mv a0, zero
+	mv ra, s6
+	ret
+EP37:
+
+
+li, t0, 3
+bne a0, t0, EP39
+	li t6, 5120
+	add t3, s3, t6
+	lb t4, 0(t3)
+	bne t4, zero, EP40
+		li t6, 5135
+		add t3, s3, t6
+		lb t4, 0(t3)
+		bne t4, zero, EP40
+			li a0, 1
+			mv ra, s6
+			ret
+	EP40:
+	mv a0, zero
+	mv ra, s6
+	ret
+EP39:
+
+
+#########################################
+#a0 <- endereço da intenção do player
+#a1 <- endereço da movimentação do player
+#a2 <- endereço da posição do player
+#########################################
+
+enemyMovement:
+mv s7, ra
+mv s9, a0
+mv s10, a1
+mv s11, a2
+
+lb a0, 0(s9)
+mv a1, s11
+jal CheckEnemyMapCollision
+beq a0, zero, EP29
+	lb t0, 0(s9)
+	sb t0, 0(s10)
+	mv ra, s7
+	ret
+EP29:
+
+lb a0, 0(s10)
+mv a1, s11
+jal CheckEnemyMapCollision
+beq a0, zero, EP30
+	mv ra, s7
+	ret
+EP30:
+
+mv a1, s11
+lb a0, 0(s10)
+jal rotateClock
+beq a0, zero, EP31
+	lb a0, 0(s10)
+	jal rotateClock
+	sb a0, 0(s10)
+	mv ra, s7
+	ret
+EP31:
+
+mv a1, s11
+lb a0, 0(s10)
+jal rotateCounter
+beq a0, zero, EP32
+	lb a0, 0(s10)
+	jal rotateCounter
+	sb a0, 0(s10)
+	mv ra, s7
+	ret
+EP32:
+
+mv ra, s7
+ret
+
+##############################
+#a0 <- endereço enemyMove
+#a1 <- endereço enemyPosition
+
+##############################
+
+changeEnemyPos:
+mv s6, ra
+mv s9, a0
+mv s10, a1
+lb t0, 0(s9)
+lw t1, 0(s10)
+lw t2, 4(s10)
+
+bne t0, zero, EP41
+	addi t1, t1, 1
+	sw t1, 0(s10)
+	mv ra, s6
+	ret
+EP41: 
+
+li t3, 1
+bne t0, t3, EP42
+	addi t2, t2, -1
+	sw t2, 4(s10)
+	mv ra, s6
+	ret
+EP42:
+
+li t3, 2
+bne t0, t3, EP43
+	addi t1, t1, -1
+	sw t1, 0(s10)
+	mv ra, s6
+	ret
+EP43:
+
+li t3, 3
+bne t0, t3, EP44
+	addi t2, t2, 1
+	sw t2, 4(s10)
+	mv ra, s6
+	ret
+EP44:
+
+mv ra, s6
 ret

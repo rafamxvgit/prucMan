@@ -1,62 +1,65 @@
 .data
-playerIntention: .byte 0
 playerMove: .byte 0
+playerIntention: .byte 0
 playerPos: .word 16, 16
+playerLastPos: .word 16, 16
+counterNaoMexe: .byte 0
+
+fnMem1: .word 0,0,0,0,0,0,0,0
 
 .include "mapa2.data"
 .include "bloco.data"
 .include "colisao.data"
-
-
-
+.include "gato1.data"
 
 .text
 
 la a0, mapa2
 addi a0, a0, 8
-jal, mapRender
+jal mapRender
 
 start:
 
-# lê a intenção do player
-jal readKeyboard
+#checa certos casos especiais
+la a0, playerPos
+jal checkLeftEnd
+jal checkRightEnd
 
-#define a movimentação do player
-jal playerMovement
+la t0, counterNaoMexe
+lb t0, 0(t0)
+bne t0, zero, EP26
+ 
+	# lê a intenção do player
+	jal readKeyboard
 
-#movimenta o player
-la s0, playerPos
-la s3, playerMove
-lb s3, 0(s3)
-lw s1, 0(s0)
-lw s2, 4(s0)
-li t0, 0
-bne s3, t0, EP20
-	addi s1, s1, 1
-	sw s1, 0(s0)
-EP20:
+	
+	#define a movimentação do player
+	la a0, playerIntention
+	la a1, playerMove
+	la a2, playerPos
+	la a3, colisao
+	addi a3, a3, 8
+	jal entityMove
 
-li t0, 1
-bne s3, t0, EP21
-	addi s2, s2, -1
-	sw s2, 4(s0)
-EP21:
+EP26:
 
-li t0, 2
-bne s3, t0, EP22
-	addi s1, s1, -1
-	sw s1, 0(s0)
-EP22:
+la a0, playerPos
+la a1, playerLastPos
+la a2, playerMove
+jal changeEntityPos
 
-li t0, 3
-bne s3, t0 EP23
-	addi s2, s2, 1
-	sw s2, 4(s0)
-EP23:
+# desrenderiza o player
+la t1, playerLastPos
+lw a0, 0(t1)
+lw a1, 4(t1)
+la a2, mapa2
+addi a2, a2, 8
+jal tileUnrender
 
 # renderiza o player
-mv a0, s1
-mv a1, s2
+la t0, playerPos
+lw a0, 0(t0)
+lw a1, 4(t0)
 la a2, bloco
 addi a2, a2, 8
 jal tileRender
@@ -66,25 +69,21 @@ li a7, 32
 li a0, 20
 ecall
 
-# desrenderiza o player
-la t1, playerPos
-lw a0, 0(t1)
-lw a1, 4(t1)
-la a2, mapa2
-addi a2, a2, 8
-jal tileUnrender
+#decrementa o counterNaoMexe
+la t0, counterNaoMexe
+lb t1, 0(t0)
+bge zero, t1, EP27
+	addi t1, t1, -1
+	sb t1, 0(t0)
+EP27:
 
 jal start
 end:
 
-#definição de funções:
-
-
-
-##################
+##################################################
 # a0 -> o endereço de memória do primeiro pixel do 
 # mapa a ser renderizado
-##################
+##################################################
 
 mapRender:
 mv s6, ra
@@ -92,22 +91,18 @@ li s0, 76800 #1.
 li s1, 0xff000000 #2.
 li t1, 0
 LP1:
-bge t1, s0, LE1
-#---------------
-add t0, a0, t1
-lb t3, 0(t0)
-add t0, s1, t1
-sb t3, 0(t0)
-#---------------
-addi t1, t1, 1
-jal LP1 
+	bge t1, s0, LE1
+	#---------------
+	add t0, a0, t1
+	lb t3, 0(t0)
+	add t0, s1, t1
+	sb t3, 0(t0)
+	#---------------
+	addi t1, t1, 1
+	jal LP1 
 LE1:
 mv ra, s6
 ret
-
-#1. numero de pixeis
-#2. #endereço da tela
-
 
 
 ###########################################
@@ -164,7 +159,6 @@ ret
 # a2 -> endereço do primeiro pixel do mapa
 ###########################################
 
-
 tileUnrender:
 mv s6, ra
 li s0, 16
@@ -204,6 +198,10 @@ ret
 #1. endereço da tela
 #2. posição do primeiro pixel em relativo ao mapa ou à tela
 
+################################################################################
+#lê a tecla pressionada pelo jogador e define a "playerIntention" a partir disso
+################################################################################
+
 readKeyboard:
 mv s6, ra
 li s0, 0xff200000
@@ -239,122 +237,172 @@ EP1:
 mv ra, s6
 ret
 
+##########################################################
+#a0 <- recebe o endereço da posição da entidade a se checar
+##########################################################
 
-playerMovement:
+checkLeftEnd:
 mv s7, ra
-la s0, playerIntention
-lb s0, 0(s0)
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s0
-jal CheckMapCollision
+la t1, mapa2
+addi t1, t1, 8
+lw s1, 0(a0)
+lw s2, 4(a0)
+la s3, playerMove
+lb s3, 0(s3)
+li t3, 2
+bne s3, t3, EP25
+bne s1, zero, EP25
+	la t0, counterNaoMexe
+	li t2, 16
+	sb t2, 0(t0)
+	li t4, 320
+	add s4, s1, t4
+	sw s4, 0(a0)
+	mv a0, s1
+	mv a1, s2
+	mv a2, t1
+	jal tileUnrender
+EP25:
+mv ra, s7
+ret
+
+##########################################################
+#a0 <- recebe o endereço da posição da entidade a se checar
+##########################################################
+
+checkRightEnd:
+mv s7, ra
+la t1, mapa2
+addi t1, t1, 8
+lw s1, 0(a0)
+lw s2, 4(a0)
+la s3, playerMove
+lb s3, 0(s3)
+li t0, 304
+bne s3, zero, EP28
+bne s1, t0, EP28
+	la, t0, counterNaoMexe
+	li t2, 16
+	sb t2, 0(t0)
+	li t4, -320
+	add s4, s1, t4
+	sw s4, 0(a0) 
+	mv a0, s1
+	mv a1, s2
+	mv a2, t1
+	jal tileUnrender
+EP28:
+mv ra, s7
+ret
+
+####################################################
+#a0 <- endereço da intenção da entidade
+#a1 <- endereço da movimentação da entidade
+#a2 <- endereço da posição da entidade
+#a3 <- endereço do primeiro pixel do mapa de colisão
+####################################################
+
+entityMove:
+la s11, fnMem1 #endereço da memória da função
+sw ra, 0(s11)
+sw a0, 4(s11) #endereço intenção
+sw a1, 8(s11) #endereço movimento
+sw a2, 12(s11) #endereço posição
+sw a3, 16(s11) #endereço do mapa colisão
+
+lb a1, 0(a0)
+mv a0, a2
+mv a2, a3
+jal checkMapCollision
 beq a0, zero, EP14
-	la s1, playerMove
-	la s0, playerIntention
-	lb s0, 0(s0)
-	sb s0, 0(s1)
-	mv ra, s7
+	lw s1, 8(s11)
+	lw s2, 4(s11)
+	lb s2, 0(s2)
+	sb s2, 0(s1)
+	lw ra, 0(s11)
 	ret
 EP14:
 
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s1
-jal CheckMapCollision
+lw a0, 12(s11)
+lw a1, 8(s11)
+lb a1, 0(a1)
+lw a2, 16(s11)
+jal checkMapCollision
 beq a0, zero, EP15
-	mv ra, s7
+	lw ra, 0(s11)
 	ret
 EP15:
 
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s1
+lw a0, 8(s11)
+lb a0, 0(a0)
 jal rotateClock
-jal CheckMapCollision
-beq a0, zero, EP18
-	la s1, playerMove
-	lb s2, 0(s1)
-	mv a0, s2
-	jal rotateClock
-	sb a0, 0(s1)
-	la s1, playerIntention
-	sb a0, 0(s1)
-	mv ra, s7
+mv a1, a0
+sb a1, 20(s11)
+lw a0, 12(s11)
+lw a2, 16(s11)
+jal checkMapCollision
+beq a0, zero, EP16
+	lb t0, 20(s11)
+	lw t1, 8(s11)
+	lw t2, 4(s11)
+	sb t0, 0(t1)
+	sb t0, 0(t2)
+	lw ra, 0(s11)
 	ret
-EP18:
+EP16:
 
-
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s1
+lw a0, 8(s11)
+lb a0, 0(a0)
 jal rotateCounter
-jal CheckMapCollision
-beq a0, zero, EP19
-	la s1, playerMove
-	lb s1, 0(s1)
-	mv a0, s1
-	jal rotateCounter
-	la s1, playerMove
-	sb a0, 0(s1)
-	la s1, playerIntention
-	sb a0, 0(s1)
-	mv ra, s7
+mv a1, a0
+sb a1, 20(s11)
+lw a0, 12(s11)
+lw a2, 16(s11)
+jal checkMapCollision
+beq a0, zero, EP17
+	lb t0, 20(s11)
+	lw t1, 8(s11)
+	lw t2, 4(s11)
+	sb t0, 0(t1)
+	sb t0, 0(t2)
+	lw ra, 0(s11)
 	ret
-EP19:
+EP17:
 
-la s1, playerMove
-lb s1, 0(s1)
-mv a0, s1
-jal rotateClock
-jal rotateClock
-jal CheckMapCollision
-beq a0, zero, EP24
-	la s1, playerMove
-	lb s2, 0(s1)
-	mv a0, s2
-	jal rotateClock
-	jal rotateClock
-	sb a0, 0(s1)
-	la s1, playerIntention
-	sb a0, 0(s1)
-	mv ra, s7
-	ret
-EP24:
-
-
-mv ra, s7
-
+lb a0, 20(s11)
+jal rotateCounter
+lw t1, 8(s11)
+lw t2, 4(s11)
+sb a0, 0(t1)
+sb a0, 0(t2)
+lw ra, 0(s11)
 ret
 
-###############################################
-# a0 <- recebe a direção de checagem da colisão
-###############################################
-# retorna 1 no a 0 caso o caminho não esteja obstruido
+#####################################################
+#a0 <- recebe o endereço da posição da entidade
+#a1 <- recebe a direção da checagem
+#a2 <- endereço do primeiro pixel do mapa de colisão
+#####################################################
 
-CheckMapCollision: #TODO: comentar essa porra dessa função
+checkMapCollision:
 mv s6, ra
-la s0, playerPos
-lw s1, 0(s0) # posição x do player
-lw s2, 4(s0) # posição y do player
-la s0, colisao
-addi s0, s0, 8
-
-li s4, 255 
+lw s1, 0(a0) #posição x da entidade
+lw s2, 4(a0) #posição y da entidade
 
 li t0, 320
 mul s3, s2, t0
 add s3, s3, s1
-add s3, s3, s0 # esse é o endereço do player no mapa de colisão
+add s3, s3, a2 # endereço da entidade no mapa de colisão
 
 
-bne a0, zero, EP6
-	addi t3, s3, 16
-	lb t4, 0(t3)
-	bne t4, zero, EP10
-		li t6, 4816
-		add t3, s3, t6
-		lb t4, 0(t3)
-		bne t4, zero, EP10
+bne a1, zero, EP6
+	addi t1, s3, 16
+	lb t2, 0(t1)
+	bne t2, zero, EP10
+		li t3, 4816
+		add t1, s3, t3
+		lb t2, 0(t1)
+		bne t2, zero, EP10
 			li a0, 1
 			mv ra, s6
 			ret
@@ -364,55 +412,52 @@ bne a0, zero, EP6
 	ret
 EP6:
 
-
 li t0, 1
-bne a0, t0, EP7
-	addi t3, s3, -320
-	lb t4, 0(t3)
-	bne t4, zero, EP11
-		addi t3, s3, -305
-		lb t4, 0(t3)
-		bne t4, zero, EP11
+bne a1, t0, EP7
+	addi t1, s3, -320
+	lb t2, 0(t1)
+	bne t2, zero, EP11
+		li t3, -305
+		add t1, s3, t3
+		lb t2, 0(t1)
+		bne t2, zero, EP11
 			li a0, 1
 			mv ra, s6
 			ret
-		
 	EP11:
 	mv a0, zero
 	mv ra, s6
 	ret
 EP7:
 
-
 li t0, 2
-bne a0, t0, EP8
-	addi t3, s3, -1
-	lb t4, 0(t3)
-	bne t4, zero, EP12
-		li t6, 4799
-		add t3, s3, t6
-		lb t4, 0(t3)
-		bne t4, zero, EP12
+bne a1, t0, EP8
+	addi t1, s3, -1
+	lb t2, 0(t1)
+	bne t2, zero, EP12
+		li t3, 4799
+		add t1, s3, t3
+		lb t2, 0(t1)
+		bne t2, zero, EP12
 			li a0, 1
 			mv ra, s6
 			ret
-	EP12: 
+	EP12:
 	mv a0, zero
 	mv ra, s6
 	ret
 EP8:
 
-
-li, t0, 3
-bne a0, t0, EP9
-	li t6, 5120
-	add t3, s3, t6
-	lb t4, 0(t3)
-	bne t4, zero, EP13
-		li t6, 5135
-		add t3, s3, t6
-		lb t4, 0(t3)
-		bne t4, zero, EP13
+li t0, 3
+bne a1, t0, EP9
+	li t3, 5120
+	add t1, s3, t3
+	lb t2, 0(t1)
+	bne t2, zero, EP13
+		li t3, 5135
+		add t1, s3, t3
+		lb t2, 0(t1)
+		bne t2, zero, EP13
 			li a0, 1
 			mv ra, s6
 			ret
@@ -421,27 +466,75 @@ bne a0, t0, EP9
 	mv ra, s6
 	ret
 EP9:
+mv ra, s6
+ret
+
+######################################################
+#a0 <- recebe endereço da posição da entidade
+#a1 <- recebe o endereço da ÚLTIMA posição da entidade
+#a2 <- recebe o endereço da movimentação da entidade
+######################################################
+
+changeEntityPos:
+mv s6, ra
+lw t0, 0(a0)
+lw t1, 4(a0)
+sw t0, 0(a1)
+sw t1, 4(a1)
+lb t2, 0(a2)
+bne t2, zero, EP20
+	addi t0, t0, 1
+	sw t0, 0(a0)
+EP20:
+
+li t3, 1
+bne t2, t3, EP21
+	addi t1, t1, -1
+	sw t1, 4(a0)
+EP21:
+
+li t3, 2
+bne t2, t3, EP22
+	addi t0, t0, -1
+	sw t0, 0(a0)
+EP22:
+
+li t3, 3
+bne t2, t3, EP23
+	addi t1, t1, 1
+	sw t1, 4(a0)
+EP23:
+mv ra, s6
+ret
+
+####################################################################################
+# você coloca um número (n) a0 e a função retorna (n-1) se (n > 3) e (3) se (n == 0)
+####################################################################################
 
 rotateClock:
 mv s6, ra
-li t0, 3
-bne t0, a0, EP16
-	mv a0, zero
+bne a0, zero, EP18
+	li a0, 3
 	mv ra, s6
 	ret
-EP16:
-addi a0, a0, 1
+EP18:
+addi a0, a0, -1
 mv ra, s6
 ret
+
+
+####################################################################################
+# você coloca um número (n) a0 e a função retorna (n+1) se (n < 3) e (0) se (n == 3)
+####################################################################################
 
 rotateCounter:
 mv s6, ra
 li t0, 3
-bne zero, a0, EP17
-	mv a0, t0
+bne t0, a0, EP19
+	mv a0, zero
 	mv ra, s6
 	ret
-EP17:
-addi a0, a0, -1
+EP19:
+addi a0, a0, 1
 mv ra, s6
 ret
