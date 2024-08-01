@@ -6,13 +6,21 @@ playerLastPos: .word 16, 16
 
 enm1Move: .byte 0
 enm1Intention: .byte 0
-enm1Pos: .word 32, 16
+enm1Pos: .word 48, 16
 enm1LastPos: .word 32, 16
 
 counterNaoMexe: .byte 0
 
+pontos1:
+.word 4,
+1,16,80, 
+1,32,80, 
+1,48,80,
+1,64,80
+
 fnMem1: .word 0,0,0,0,0,0,0,0
 
+.include "normalPoint.data"
 .include "mapa2.data"
 .include "bloco.data"
 .include "colisao.data"
@@ -91,6 +99,33 @@ lb a3, 0(a3)
 li a4, 123
 jal moveEntityCollision
 
+#renderiza a colisão dos pontos
+la a0, colisao
+addi a0, a0, 8
+la a1, pontos1
+li a2, 122
+jal renderPointsCollision
+ 
+#verifica se o player deve ir de base
+la a0, colisao
+addi a0, a0, 8
+la a2, playerPos
+lw a1, 0(a2)
+lw a2, 4(a2)
+li a3, 123
+jal isEntityTouching
+beq a0, zero, EP33
+	li a7, 10
+	ecall
+EP33:  
+
+#renderiza os pontos
+li a0, 0xff000000
+la a1, pontos1
+la a2, normalPoint
+addi a2, a2, 8
+jal renderPoints
+
 # desrenderiza o player
 la t1, playerLastPos
 lw a0, 0(t1)
@@ -125,7 +160,7 @@ jal tileRender
 
 # espera um tempinho
 li a7, 32
-li a0, 20
+li a0, 15
 ecall
 
 #decrementa o counterNaoMexe
@@ -454,14 +489,16 @@ add s3, s3, s1
 add s3, s3, a2 # endereço da entidade no mapa de colisão
 
 
+li t4, -1
+
 bne a1, zero, EP6
 	addi t1, s3, 16
 	lb t2, 0(t1)
-	bne t2, zero, EP10
+	beq t2, t4, EP10
 		li t3, 4816
 		add t1, s3, t3
 		lb t2, 0(t1)
-		bne t2, zero, EP10
+		beq t2, t4, EP10
 			li a0, 1
 			mv ra, s6
 			ret
@@ -475,11 +512,11 @@ li t0, 1
 bne a1, t0, EP7
 	addi t1, s3, -320
 	lb t2, 0(t1)
-	bne t2, zero, EP11
+	beq t2, t4, EP11
 		li t3, -305
 		add t1, s3, t3
 		lb t2, 0(t1)
-		bne t2, zero, EP11
+		beq t2, t4, EP11
 			li a0, 1
 			mv ra, s6
 			ret
@@ -493,11 +530,11 @@ li t0, 2
 bne a1, t0, EP8
 	addi t1, s3, -1
 	lb t2, 0(t1)
-	bne t2, zero, EP12
+	beq t2, t4, EP12
 		li t3, 4799
 		add t1, s3, t3
 		lb t2, 0(t1)
-		bne t2, zero, EP12
+		beq t2, t4, EP12
 			li a0, 1
 			mv ra, s6
 			ret
@@ -512,11 +549,11 @@ bne a1, t0, EP9
 	li t3, 5120
 	add t1, s3, t3
 	lb t2, 0(t1)
-	bne t2, zero, EP13
+	beq t2, t4, EP13
 		li t3, 5135
 		add t1, s3, t3
 		lb t2, 0(t1)
-		bne t2, zero, EP13
+		beq t2, t4, EP13
 			li a0, 1
 			mv ra, s6
 			ret
@@ -686,8 +723,8 @@ bne a3, t0, EP30
 	li s1, 4800
 	add s1, s1, s0 # endereço do primeiro pixel de escrita
 	li t1, 0
-	LP11:
-		bge t1, t4, LE11
+	LP15:
+		bge t1, t4, LE15
 		#---------------
 		add t5, s1, t1
 		add t6, s2, t1
@@ -695,12 +732,188 @@ bne a3, t0, EP30
 		sb a4, 0(t5)
 		#---------------
 		addi t1, t1, 1
-		jal LP11
-	LE11:
+		jal LP15
+	LE15:
 		
 EP30:
 mv ra, s6
 ret
+
+############################################################
+#a0 <- endereço do primeiro pixel do mapa de colisão
+#a1 <- endereço x da entidade
+#a2 <- endereço y da entidade
+#a3 <- valor de contato
+############################################################
+
+#DESCRIÇÃO:
+#essa função checa se a entidade está em contato com
+#com um certo elemento definido por a3  
+
+isEntityTouching:
+mv s6, ra
+li t0, 320
+mul s0, a2, t0
+add s0, s0, a1
+add s0, s0, a0 #endereço da entidade no mapa de colisão
+
+addi s1, s0, 16
+addi s2, s0, -1
+addi s3, s0, -320
+addi s4, s0, -305
+li t0, 4799
+add s5, s0, t0
+li t0, 4816
+add s7, s0, t0
+li t0, 5120
+add s8, s0, t0
+li t0, 5135
+add s9, s0, t0
+
+jal EP32
+P1:
+li a0, 1
+mv ra, s6
+ret
+EP32:
+
+lb t0, 0(s1)
+beq t0, a3, P1
+lb t0, 0(s2)
+beq t0, a3, P1
+lb t0, 0(s3)
+beq t0, a3, P1
+lb t0, 0(s4)
+beq t0, a3, P1
+lb t0, 0(s5)
+beq t0, a3, P1
+lb t0, 0(s7)
+beq t0, a3, P1
+lb t0, 0(s8)
+beq t0, a3, P1
+lb t0, 0(s9)
+beq t0, a3, P1
+
+li a0, 0
+mv ra, s6
+ret
+
+#####################################################################
+#a0 <- endereço do primeiro pixel do lugar no qual se deve renderizar
+#a1 <- endereço da lista de pontos a se renderizar
+#a2 <- cor a se renderizar
+#####################################################################
+
+renderPointsCollision:
+mv s6, ra
+lw t0, 0(a1)
+addi a1, a1, 4
+li t1, 0
+LP11:
+	bge t1, t0, LE11
+	#---------------
+	li t3, 12
+	mul t2, t1, t3
+	add t2, t2, a1 #endereço dos valores do ponto
+	
+	lw s0, 4(t2) # x do ponto
+	lw s1, 8(t2) # y do ponto
+	lw s3, 0(t2) # se deve renderizar o ponto ou não
+
+	beq s3, zero, EP34
+		li t3, 320
+		mul s4, s1, t3
+		add s4, s4, s0
+		add s4, s4, a0 #endereço do primeiro pixel a se renderizar
+
+		sb a2, 0(s4)
+		addi s5, s4, 15
+		sb a2, 0(s5)
+		li t3, 4800
+		add s5, s4, t3
+		sb a2, 0(s5)
+		li t3, 4815
+		add s5, s4, t3
+		sb a2, 0(s5)
+	EP34:
+	
+	#---------------
+	addi t1, t1, 1
+	jal LP11
+LE11:
+
+mv ra, s6
+ret
+
+
+#####################################################################
+#a0 <- endereço do primeiro pixel do lugar no qual se deve renderizar
+#a1 <- endereço da lista de pontos a se renderizar
+#a2 <- prmeiro pixel da imagem
+#####################################################################
+
+renderPoints:
+mv s6, ra
+li s4, 8
+li s5, 320
+lw t0, 0(a1)
+addi a1, a1, 4
+li t1, 0
+LP12:
+	bge t1, t0, LE12
+	#---------------
+	li t3, 12
+	mul t2, t1, t3
+	add t2, t2, a1 #endereço dos valores do ponto
+	
+	lw s0, 4(t2) # x do ponto
+	addi s0, s0, 4
+	lw s1, 8(t2) # y do ponto
+	addi s1, s1, 4
+	mul s1, s5, s1
+	add s1, s1, s0
+	add s1, s1, a0 #endereço do primeiro pixel na tela a se renderizar
+
+	lw s3, 0(t2) # se deve renderizar o ponto ou não
+
+	beq s3, zero, EP35
+		li t2, 0
+		LP13:
+			bge t2, s4, LE13
+			#---------------
+			li t3, 0
+			LP14:
+				bge t3, s4, LE14
+				#----------------
+				mul s8, t2, s4
+				add s8, s8, t3
+				add s8, s8, a2
+				lb s8, 0(s8)
+				mul s7, t2, s5
+				add s7, s7, t3  
+				add s7, s7, s1
+				sb s8, 0(s7)
+				
+				#----------------
+				addi t3, t3, 1
+				jal LP14
+			LE14:
+			#---------------
+			addi t2, t2, 1
+			jal LP13
+		LE13:
+	EP35:
+	#---------------
+	addi t1, t1, 1
+	jal LP12
+LE12:
+
+
+
+
+mv ra, s6
+ret
+
 
 ####################################################################################
 # você coloca um número (n) a0 e a função retorna (n-1) se (n > 3) e (3) se (n == 0)
