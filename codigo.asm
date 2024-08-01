@@ -6,7 +6,7 @@ playerLastPos: .word 16, 16
 
 enm1Move: .byte 0
 enm1Intention: .byte 0
-enm1Pos: .word 32, 16
+enm1Pos: .word 48, 16
 enm1LastPos: .word 32, 16
 
 counterNaoMexe: .byte 0
@@ -20,10 +20,21 @@ fnMem1: .word 0,0,0,0,0,0,0,0
 
 .text
 
+#renderiza o mapa
 la a0, mapa2
 addi a0, a0, 8
 jal mapRender
 
+#renderiza a colisão inicial do inimigo 1
+la a0, colisao
+addi a0, a0, 8
+la a1, enm1Pos
+lw a2, 4(a1)
+lw a1, 0(a1)
+li a3, 123
+jal solidColorTileRender
+
+#início do game loop
 start:
 
 #checa certos casos especiais
@@ -69,6 +80,30 @@ la a1, enm1LastPos
 la a2, enm1Move
 jal changeEntityPos
 
+#renderiza a colisão do inimigo 1
+la a0, colisao
+addi a0, a0, 8 
+la a1, enm1Pos
+lw a2, 4(a1)
+lw a1, 0(a1)
+la a3, enm1Move
+lb a3, 0(a3)
+li a4, 123
+jal moveEntityCollision
+
+#verifica se o player deve ir de base
+la a0, colisao
+addi a0, a0, 8
+la a2, playerPos
+lw a1, 0(a2)
+lw a2, 4(a2)
+li a3, 123
+jal isEntityTouching
+beq a0, zero, EP33
+	li a7, 10
+	ecall
+EP33:  
+
 # desrenderiza o player
 la t1, playerLastPos
 lw a0, 0(t1)
@@ -103,7 +138,7 @@ jal tileRender
 
 # espera um tempinho
 li a7, 32
-li a0, 20
+li a0, 17
 ecall
 
 #decrementa o counterNaoMexe
@@ -541,6 +576,201 @@ bne t2, t3, EP23
 	addi t1, t1, 1
 	sw t1, 4(a0)
 EP23:
+mv ra, s6
+ret
+
+############################################################
+#a0 <- endereço do primeiro pixel da tela/seção-de-memória
+#a1 <- posição x na tela
+#a2 <- posição y na tela
+#a3 <- cor a se renderizar
+############################################################
+
+solidColorTileRender:
+mv s6, ra
+li t3, 320
+li t4, 16
+mul s0, a2, t3
+add s0, s0, a1
+add s0, s0, a0 #endereço do primeiro pixel na tela
+
+li t1, 0
+LP6:
+	bge t1, t4, LE6
+	#---------------
+	li t2, 0
+	LP7:
+		bge t2, t4, LE7
+		#---------------
+		mul t5, t1, t3
+		add t5, t5, t2
+		add t5, t5, s0
+		sb a3, 0(t5)
+		#---------------
+		addi t2, t2, 1
+		jal LP7
+	LE7:
+	#---------------
+	addi t1, t1, 1
+	jal LP6
+LE6:
+
+mv ra, s6
+ret
+
+###########################################################
+#a0 <- endereço do primeiro pixel ta tela/região de memória
+#a1 <- posição x atual da entidade
+#a2 <- posição y atual da entidade
+#a3 <- última movimentação da entidade
+#a4 <- cor a se renderizar
+###########################################################
+
+moveEntityCollision:
+mv s6, ra
+li t3, 320
+li t4, 16
+mul s0, a2, t3
+add s0, s0, a1
+add s0, s0, a0 #endereço da entidade na tela
+
+bne a3, zero, EP31
+	addi s1, s0, 15 #primeiro pixel de escrita
+	addi s2, s0, -1 #primeiro pixel de apagamento
+	li t1, 0
+	LP8:
+		bge t1, t4, LE8
+		#--------------
+		mul t5, t1, t3 #contador*320
+		add t5, t5, s1 #(contador*320)+(enderço do primeiro pixel de escrita)
+		mul t6, t1, t3 #contador*320
+		add t6, t6, s2 #(contador*320)+(endereço do primeiro pixel de apagamento)
+		sb zero, 0(t6)
+		sb a4, 0(t5)
+		#--------------
+		addi t1, t1, 1
+		jal LP8
+	LE8:
+EP31:
+
+li t0, 1
+bne a3, t0, EP24
+	li s2, 5120
+	add s2, s2, s0 #endereço do primeiro pixel de apagamento
+	mv s1, s0 #endereço do primeiro pixel de escrita
+	li t1, 0
+	LP9:
+		bge t1, t4, LE9
+		#--------------
+		add t5, s1, t1
+		add t6, s2, t1
+		sb zero, 0(t6)
+		sb a4, 0(t5)
+		#--------------
+		addi t1, t1, 1
+		jal LP9
+	LE9:
+	
+EP24:
+
+li t0, 2
+bne a3, t0, EP29
+	mv s1, s0
+	addi s2, s0, 16
+	li t1, 0
+	LP10:
+		bge t1, t4, LE10
+		#---------------
+		mul t5, t1, t3
+		add t5, t5, s1
+		mul t6, t1, t3
+		add t6, t6, s2
+		sb zero, 0(t6)
+		sb a4, 0(t5)
+		#---------------
+		addi t1, t1, 1
+		jal LP10
+	LE10:
+EP29:
+
+li t0, 3
+bne a3, t0, EP30
+	addi s2, s0, -320 # endereço do primeiro pixel de apagamento
+	li s1, 4800
+	add s1, s1, s0 # endereço do primeiro pixel de escrita
+	li t1, 0
+	LP11:
+		bge t1, t4, LE11
+		#---------------
+		add t5, s1, t1
+		add t6, s2, t1
+		sb zero, 0(t6)
+		sb a4, 0(t5)
+		#---------------
+		addi t1, t1, 1
+		jal LP11
+	LE11:
+		
+EP30:
+mv ra, s6
+ret
+
+############################################################
+#a0 <- endereço do primeiro pixel do mapa de colisão
+#a1 <- endereço x da entidade
+#a2 <- endereço y da entidade
+#a3 <- valor de contato
+############################################################
+
+#DESCRIÇÃO:
+#essa função checa se a entidade está em contato com
+#com um certo elemento definido por a3  
+
+isEntityTouching:
+mv s6, ra
+li t0, 320
+mul s0, a2, t0
+add s0, s0, a1
+add s0, s0, a0 #endereço da entidade no mapa de colisão
+
+addi s1, s0, 16
+addi s2, s0, -1
+addi s3, s0, -320
+addi s4, s0, -305
+li t0, 4799
+add s5, s0, t0
+li t0, 4816
+add s7, s0, t0
+li t0, 5120
+add s8, s0, t0
+li t0, 5135
+add s9, s0, t0
+
+jal EP32
+P1:
+li a0, 1
+mv ra, s6
+ret
+EP32:
+
+lb t0, 0(s1)
+beq t0, a3, P1
+lb t0, 0(s2)
+beq t0, a3, P1
+lb t0, 0(s3)
+beq t0, a3, P1
+lb t0, 0(s4)
+beq t0, a3, P1
+lb t0, 0(s5)
+beq t0, a3, P1
+lb t0, 0(s7)
+beq t0, a3, P1
+lb t0, 0(s8)
+beq t0, a3, P1
+lb t0, 0(s9)
+beq t0, a3, P1
+
+li a0, 0
 mv ra, s6
 ret
 
