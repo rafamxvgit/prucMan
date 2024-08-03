@@ -1,8 +1,17 @@
 .data
-playerMove: .byte 0
+
 playerIntention: .byte 0
+playerMove: .byte 0
+
 playerPos: .word 16, 16
 playerLastPos: .word 16, 16
+
+pontos1:
+.word 4,
+2,16,80, 
+3,32,80, 
+4,48,80,
+
 
 enm1Move: .byte 0
 enm1Intention: .byte 0
@@ -10,13 +19,6 @@ enm1Pos: .word 48, 16
 enm1LastPos: .word 32, 16
 
 counterNaoMexe: .byte 0
-
-pontos1:
-.word 4,
-1,16,80, 
-1,32,80, 
-1,48,80,
-1,64,80
 
 fnMem1: .word 0,0,0,0,0,0,0,0
 
@@ -88,6 +90,13 @@ la a1, enm1LastPos
 la a2, enm1Move
 jal changeEntityPos
 
+#renderiza a colisão dos pontos
+la a0, colisao
+addi a0, a0, 8
+la a1, pontos1
+li a2, 122
+jal renderPointsCollision
+
 #renderiza a colisão do inimigo 1
 la a0, colisao
 addi a0, a0, 8 
@@ -99,13 +108,16 @@ lb a3, 0(a3)
 li a4, 123
 jal moveEntityCollision
 
-#renderiza a colisão dos pontos
+ 
+#verifica se o player pegou o ponto
 la a0, colisao
 addi a0, a0, 8
-la a1, pontos1
-li a2, 122
-jal renderPointsCollision
- 
+la a1, playerPos
+lw a2, 4(a1)
+lw a1, 0(a1)
+la a3, pontos1
+jal checkPointsColl
+
 #verifica se o player deve ir de base
 la a0, colisao
 addi a0, a0, 8
@@ -801,7 +813,6 @@ ret
 #####################################################################
 #a0 <- endereço do primeiro pixel do lugar no qual se deve renderizar
 #a1 <- endereço da lista de pontos a se renderizar
-#a2 <- cor a se renderizar
 #####################################################################
 
 renderPointsCollision:
@@ -826,15 +837,15 @@ LP11:
 		add s4, s4, s0
 		add s4, s4, a0 #endereço do primeiro pixel a se renderizar
 
-		sb a2, 0(s4)
+		sb s3, 0(s4)
 		addi s5, s4, 15
-		sb a2, 0(s5)
+		sb s3, 0(s5)
 		li t3, 4800
 		add s5, s4, t3
-		sb a2, 0(s5)
+		sb s3, 0(s5)
 		li t3, 4815
 		add s5, s4, t3
-		sb a2, 0(s5)
+		sb s3, 0(s5)
 	EP34:
 	
 	#---------------
@@ -908,9 +919,95 @@ LP12:
 	jal LP12
 LE12:
 
+mv ra, s6
+ret
+
+############################################################
+#a0 <- endereço do primeiro pixel do mapa de colisão
+#a1 <- endereço x da entidade
+#a2 <- endereço y da entidade
+#a3 <- enderço dos pontos
+############################################################
+
+#DESCRIÇÃO:
+#essa função checa se a entidade está em contato com
+#um ponto  
+
+checkPointsColl:
+mv s6, ra
+li t0, 320
+mul s0, a2, t0
+add s0, s0, a1
+add s0, s0, a0 #endereço da entidade no mapa de colisão
+
+addi s1, s0, 16
+lb s1, 0(s1)
+
+addi s2, s0, -1
+lb s2, 0(s2)
+
+addi s3, s0, -320
+lb s3, 0(s3)
+
+addi s4, s0, -305
+lb s4, 0(s4)
+
+li t0, 4799
+add s5, s0, t0
+lb s5, 0(s5)
+
+li t0, 4816
+add s7, s0, t0
+lb s7, 0(s7)
+
+li t0, 5120
+add s8, s0, t0
+lb s8, 0(s8)
+
+li t0, 5135
+add s9, s0, t0
+lb s9, 0(s9)
+
+lb t2, 0(a3) #numero de pontos
+li t1, 0
+LP16:
+	bge t1, t2, LE16
+	#---------------
+	li t0, 12
+	mul t3, t1, t0
+	addi t3, t3, 4 #endereço da cor do ponto 
+	add t3, t3, a3
+	lw t0, 0(t3)
+	
+	
+	jal EP36
+		P2:
+		
+		li t0, 12
+		mul t3, t1, t0
+		add t3, t3, a3
+		addi t3, t3, 4
+		sw zero, 0(t3)
+		mv ra, s6
+		ret
+	EP36:
 
 
+	beq s1, t0, P2
+	beq s2, t0, P2
+	beq s3, t0, P2
+	beq s4, t0, P2
+	beq s5, t0, P2
+	beq s7, t0, P2
+	beq s8, t0, P2
+	beq s9, t0, P2
 
+	#--------------
+	addi t1, t1, 1
+	jal LP16
+LE16:
+
+li a0, 0
 mv ra, s6
 ret
 
