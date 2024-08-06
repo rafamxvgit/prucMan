@@ -3,15 +3,22 @@
 playerIntention: .byte 0
 playerMove: .byte 0
 
+contadorPontos: .byte 0
+
 playerPos: .word 16, 16
 playerLastPos: .word 16, 16
 
 pontos1:
-.word 4,
+.word 5,
 2,16,80, 
 3,32,80, 
 4,48,80,
+5,80,80,
+6,96,80
 
+supPoints:
+.word 1
+7, 112, 80
 
 enm1Move: .byte 0
 enm1Intention: .byte 0
@@ -27,6 +34,7 @@ fnMem1: .word 0,0,0,0,0,0,0,0
 .include "bloco.data"
 .include "colisao.data"
 .include "gato1.data"
+.include "ptMax.data"
 
 .text
 
@@ -94,7 +102,12 @@ jal changeEntityPos
 la a0, colisao
 addi a0, a0, 8
 la a1, pontos1
-li a2, 122
+jal renderPointsCollision
+
+#renderiza a colisão dos superPontos
+la a0, colisao
+addi a0, a0, 8
+la a1, supPoints
 jal renderPointsCollision
 
 #renderiza a colisão do inimigo 1
@@ -108,7 +121,6 @@ lb a3, 0(a3)
 li a4, 123
 jal moveEntityCollision
 
- 
 #verifica se o player pegou o ponto
 la a0, colisao
 addi a0, a0, 8
@@ -117,6 +129,16 @@ lw a2, 4(a1)
 lw a1, 0(a1)
 la a3, pontos1
 jal checkPointsColl
+
+#verifica se o player pegou o superPonto
+la a0, colisao
+addi a0, a0, 8
+la a1, playerPos
+lw a2, 4(a1)
+lw a1, 0(a1)
+la a3, supPoints
+jal checkPointsColl
+#TODO: mudar o modo de comportamento dos inimigos
 
 #verifica se o player deve ir de base
 la a0, colisao
@@ -135,6 +157,13 @@ EP33:
 li a0, 0xff000000
 la a1, pontos1
 la a2, normalPoint
+addi a2, a2, 8
+jal renderPoints
+
+#renderiza os superPontos
+li a0, 0xff000000
+la a1, supPoints
+la a2, ptMax
 addi a2, a2, 8
 jal renderPoints
 
@@ -975,24 +1004,11 @@ LP16:
 	#---------------
 	li t0, 12
 	mul t3, t1, t0
-	addi t3, t3, 4 #endereço da cor do ponto 
-	add t3, t3, a3
-	lw t0, 0(t3)
+	addi t3, t3, 4 
+	add t3, t3, a3 # endereço da cor de colisão do ponto 
+	lw t0, 0(t3) # cor de colisão do ponto
+	beq t0, zero, EP36 
 	
-	
-	jal EP36
-		P2:
-		
-		li t0, 12
-		mul t3, t1, t0
-		add t3, t3, a3
-		addi t3, t3, 4
-		sw zero, 0(t3)
-		mv ra, s6
-		ret
-	EP36:
-
-
 	beq s1, t0, P2
 	beq s2, t0, P2
 	beq s3, t0, P2
@@ -1002,6 +1018,26 @@ LP16:
 	beq s8, t0, P2
 	beq s9, t0, P2
 
+	
+	jal EP36
+		P2:
+		
+		li t0, 12
+		mul t3, t1, t0
+		add t3, t3, a3
+		addi t3, t3, 4
+		sw zero, 0(t3) # desativa o ponto
+		la t3, contadorPontos
+		lb t0, 0(t3)
+		addi t0, t0, 1
+		sb t0, 0(t3)
+		li a0, 1
+		mv ra, s6
+		ret
+	EP36:
+
+
+	
 	#--------------
 	addi t1, t1, 1
 	jal LP16
