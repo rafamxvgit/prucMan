@@ -3,10 +3,10 @@
 playerIntention: .byte 0
 playerMove: .byte 0
 
-contadorPontos: .byte 0
-
 playerPos: .word 16, 16
 playerLastPos: .word 16, 16
+
+contadorPontos: .byte 0
 
 pontos1:
 .word 5,
@@ -17,13 +17,16 @@ pontos1:
 6,96,80
 
 supPoints:
-.word 1
+.word 1,
 7, 112, 80
+
+supPointMode: .byte 0
 
 enm1Move: .byte 0
 enm1Intention: .byte 0
 enm1Pos: .word 48, 16
 enm1LastPos: .word 32, 16
+enm1State: .byte 1
 
 counterNaoMexe: .byte 0
 
@@ -58,6 +61,7 @@ start:
 #checa certos casos especiais
 la a0, playerPos
 jal checkLeftEnd
+la a0, playerPos
 jal checkRightEnd
 
 la t0, counterNaoMexe
@@ -110,16 +114,20 @@ addi a0, a0, 8
 la a1, supPoints
 jal renderPointsCollision
 
-#renderiza a colisão do inimigo 1
-la a0, colisao
-addi a0, a0, 8 
-la a1, enm1Pos
-lw a2, 4(a1)
-lw a1, 0(a1)
-la a3, enm1Move
-lb a3, 0(a3)
-li a4, 123
-jal moveEntityCollision
+la t0, enm1State
+lb t0, 0(t0)
+beq t0, zero, EP41
+	#renderiza a colisão do inimigo 1
+	la a0, colisao
+	addi a0, a0, 8 
+	la a1, enm1Pos
+	lw a2, 4(a1)
+	lw a1, 0(a1)
+	la a3, enm1Move
+	lb a3, 0(a3)
+	li a4, 123
+	jal moveEntityCollision
+EP41:
 
 #verifica se o player pegou o ponto
 la a0, colisao
@@ -138,20 +146,53 @@ lw a2, 4(a1)
 lw a1, 0(a1)
 la a3, supPoints
 jal checkPointsColl
-#TODO: mudar o modo de comportamento dos inimigos
+
+#muda o modo de comportamento dos inimigos
+la t0, supPointMode
+beq a0, zero, EP37 
+sb a0, 0(t0)
+EP37:
 
 #verifica se o player deve ir de base
-la a0, colisao
-addi a0, a0, 8
-la a2, playerPos
-lw a1, 0(a2)
-lw a2, 4(a2)
-li a3, 123
-jal isEntityTouching
-beq a0, zero, EP33
-	li a7, 10
-	ecall
-EP33:  
+la t0, supPointMode
+lb t0, 0(t0)
+bne t0, zero, EP38
+	#---------------------------------
+	#caso de colisão com o inimigo 1
+	la a0, colisao
+	addi a0, a0, 8
+	la a2, playerPos
+	lw a1, 0(a2)
+	lw a2, 4(a2)
+	li a3, 123
+	jal isEntityTouching
+	beq a0, zero, EP33
+		li a7, 10
+		ecall
+	EP33:  
+	#---------------------------------
+
+	jal EP40
+
+EP38:
+	#---------------------------------
+	#verifica se o inimigo deve ir de base
+
+	#caso de colisão com o inimigo 1
+	la a0, colisao
+	addi a0, a0, 8
+	la a2, playerPos
+	lw a1, 0(a2)
+	lw a2, 4(a2)
+	li a3, 123
+	jal isEntityTouching
+	beq a0, zero, EP39
+		la t0, enm1State
+		sb zero, 0(t0)
+	EP39:
+	#---------------------------------
+
+EP40:
 
 #renderiza os pontos
 li a0, 0xff000000
@@ -191,13 +232,17 @@ la a2, bloco
 addi a2, a2, 8
 jal tileRender
 
-#renderiza o inimigo
-la t0, enm1Pos
-lw a0, 0(t0)
-lw a1, 4(t0)
-la a2, gato1
-addi a2, a2, 8
-jal tileRender
+la t0, enm1State
+lb t0, 0(t0)
+beq t0, zero, EP42
+	#renderiza o inimigo
+	la t0, enm1Pos
+	lw a0, 0(t0)
+	lw a1, 4(t0)
+	la a2, gato1
+	addi a2, a2, 8
+	jal tileRender
+EP42:
 
 # espera um tempinho
 li a7, 32
