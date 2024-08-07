@@ -20,7 +20,7 @@ supPoints:
 .word 1,
 7, 112, 80
 
-supPointMode: .byte 0
+supPointMode: .word 0
 
 enm1Move: .byte 0
 enm1Intention: .byte 0
@@ -148,14 +148,15 @@ la a3, supPoints
 jal checkPointsColl
 
 #muda o modo de comportamento dos inimigos
-la t0, supPointMode
 beq a0, zero, EP37 
-sb a0, 0(t0)
+	la t0, supPointMode
+	li t1, 640
+	sw t1, 0(t0)
 EP37:
 
 #verifica se o player deve ir de base
 la t0, supPointMode
-lb t0, 0(t0)
+lw t0, 0(t0)
 bne t0, zero, EP38
 	#---------------------------------
 	#caso de colisão com o inimigo 1
@@ -189,6 +190,13 @@ EP38:
 	beq a0, zero, EP39
 		la t0, enm1State
 		sb zero, 0(t0)
+		
+		la t1, enm1LastPos
+		lw a0, 0(t1)
+		lw a1, 4(t1)
+		la a2, mapa2
+		addi a2, a2, 8
+		jal tileUnrender
 	EP39:
 	#---------------------------------
 
@@ -216,13 +224,18 @@ la a2, mapa2
 addi a2, a2, 8
 jal tileUnrender
 
-#desrenderiza o inimigo
-la t1, enm1LastPos
-lw a0, 0(t1)
-lw a1, 4(t1)
-la a2, mapa2
-addi a2, a2, 8
-jal tileUnrender
+
+la t0, enm1State
+lb t0, 0(t0)
+beq t0, zero, EP43
+	#desrenderiza o inimigo
+	la t1, enm1LastPos
+	lw a0, 0(t1)
+	lw a1, 4(t1)
+	la a2, mapa2
+	addi a2, a2, 8
+	jal tileUnrender
+EP43:
 
 # renderiza o player
 la t0, playerPos
@@ -256,6 +269,14 @@ bge zero, t1, EP27
 	addi t1, t1, -1
 	sb t1, 0(t0)
 EP27:
+
+#decrementa o supPointMode
+la t0, supPointMode
+lw t1, 0(t0)
+bge zero, t1, EP44
+	addi t1, t1, -1
+	sw t1, 0(t0)
+EP44:
 
 jal start
 end:
