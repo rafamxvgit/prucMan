@@ -32,6 +32,8 @@ counterNaoMexe: .byte 0
 
 fnMem1: .word 0,0,0,0,0,0,0,0
 
+numAddresses: .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
+
 .include "normalPoint.data"
 .include "mapa2.data"
 .include "bloco.data"
