@@ -334,6 +334,9 @@ li a7, 32
 li a0, 15
 ecall
 
+#-----------------------
+#-----------------------
+
 #decrementa o counterNaoMexe
 la t0, counterNaoMexe
 lb t1, 0(t0)
