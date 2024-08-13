@@ -1,24 +1,26 @@
 .data
 
+playerSprite: .word 0
 playerIntention: .byte 0
 playerMove: .byte 0
 
 playerPos: .word 16, 16
 playerLastPos: .word 16, 16
 
+
 contadorPontos: .byte 0
 
 pontos1:
 .word 5,
 2,16,80, 
-3,32,80, 
-4,48,80,
-5,80,80,
-6,96,80
+3,48,80, 
+4,80,80,
+5,112,80,
+6,144,80
 
 supPoints:
 .word 1,
-7, 112, 80
+7, 96, 80
 
 supPointMode: .word 0
 
@@ -31,17 +33,75 @@ enm1State: .byte 1
 counterNaoMexe: .byte 0
 
 fnMem1: .word 0,0,0,0,0,0,0,0
+fnMem2: .word 0,0,0,0,0,0,0,0
 
 numAddresses: .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
 
 .include "normalPoint.data"
 .include "mapa2.data"
 .include "bloco.data"
+.include "pruc.data"
+.include "pruc1.data"
 .include "colisao.data"
 .include "gato1.data"
 .include "ptMax.data"
 
+.include "n0.data"
+.include "n1.data"
+.include "n2.data"
+.include "n3.data"
+.include "n4.data"
+.include "n5.data"
+.include "n6.data"
+.include "n7.data"
+.include "n8.data"
+.include "n9.data"
+
 .text
+
+#salva os endereços dos números nos seus respectivos lugares
+
+la t0, numAddresses
+
+la t1, n0
+addi t1, t1, 8
+sw t1, 0(t0)
+
+la t1, n1
+addi t1, t1, 8
+sw t1, 4(t0)
+
+la t1, n2
+addi t1, t1, 8
+sw t1, 8(t0)
+
+la t1, n3
+addi t1, t1, 8
+sw t1, 12(t0)
+
+la t1, n4
+addi t1, t1, 8
+sw t1, 16(t0)
+
+la t1, n5
+addi t1, t1, 8
+sw t1, 20(t0)
+
+la t1, n6
+addi t1, t1, 8
+sw t1, 24(t0)
+
+la t1, n7
+addi t1, t1, 8
+sw t1, 28(t0)
+
+la t1, n8
+addi t1, t1, 8
+sw t1, 32(t0)
+
+la t1, n9
+addi t1, t1, 8
+sw t1, 36(t0)
 
 #renderiza o mapa
 la a0, mapa2
@@ -239,11 +299,16 @@ beq t0, zero, EP43
 	jal tileUnrender
 EP43:
 
+#escolhe a imagem do player a se renderizar
+
+jal playerSpritePicker
+
 # renderiza o player
 la t0, playerPos
 lw a0, 0(t0)
 lw a1, 4(t0)
-la a2, bloco
+la a2, playerSprite
+lw a2, 0(a2)
 addi a2, a2, 8
 jal tileRender
 
@@ -259,10 +324,27 @@ beq t0, zero, EP42
 	jal tileRender
 EP42:
 
+#renderiza o contador de pontos
+la a0, contadorPontos
+lb a0, 0(a0)
+li a1, 0
+li a2, 0
+jal numRepresentation
+
+#renderiza o timer do super
+la a0, supPointMode
+lw a0, 0(a0)
+li a1, 96
+li a2, 0
+jal numRepresentation
+
 # espera um tempinho
 li a7, 32
 li a0, 15
 ecall
+
+#-----------------------
+#-----------------------
 
 #decrementa o counterNaoMexe
 la t0, counterNaoMexe
@@ -1115,6 +1197,152 @@ li a0, 0
 mv ra, s6
 ret
 
+####################################
+#a0 <- numero a ser representado
+#a1 <- x da posição de representação
+#a2 <- y da posição de representação
+####################################
+
+numRepresentation:
+mv s7, ra
+
+la s2, numAddresses
+la s10, fnMem2
+
+sw a1, 12(s10)
+sw a2, 16(s10)
+
+li s0, 100
+li s1, 10
+
+div t0, a0, s0 # centenas
+rem a0, a0, s0
+
+div t1, a0, s1 # dezenas
+rem t2, a0, s1 # unidades
+
+
+slli t0, t0, 2 
+slli t1, t1, 2
+slli t2, t2, 2
+
+add t0, t0, s2
+add t1, t1, s2
+add t2, t2, s2
+
+lw t0, 0(t0) # endereço do primeiro digito
+lw t1, 0(t1) # endereço do segundo digito
+lw t2, 0(t2) # endereço do terceiro digito
+
+sw t0, 0(s10)
+sw t1, 4(s10)
+sw t2, 8(s10)
+
+mv a0, t0
+mv a3, a2
+mv a2, a1
+li a1, 0xff000000
+jal renderDigit
+
+
+lw a0, 4(s10)
+lw a2, 12(s10)
+addi a2, a2, 8
+lw a3, 16(s10)
+li a1, 0xff000000
+jal renderDigit
+
+
+lw a0, 8(s10)
+lw a2, 12(s10)
+addi a2, a2, 16
+lw a3, 16(s10)
+li a1, 0xff000000
+jal renderDigit
+
+mv ra, s7
+ret
+
+#######################
+#a0 endereço da imagem
+#a1 endereço do lugar
+#a2 x da imagem
+#a3 y da imagem
+#######################
+
+renderDigit:
+mv s6, ra
+li s0, 8
+li s1, 16
+li s2, 320
+
+mul s3, s2, a3
+add s3, s3, a2
+add s3, s3, a1 # endereço inicial na tela
+
+li t1, 0
+LP17:
+	bge t1, s1, LE17
+	#---------------
+	li t2, 0
+	LP18:
+		bge t2, s0, LE18
+		#---------------
+		mul t0, t1, s2
+		add t0, t0, t2
+		add t0, t0, s3 # endereço no qual se deve escrever
+
+		mul t3, t1, s0
+		add t3, t3, t2
+		add t3, t3, a0 # endereço do qual se deve ler
+
+		lb s4, 0(t3)
+		sb s4, 0(t0)
+		
+		#---------------
+		addi t2, t2, 1
+		jal LP18
+	LE18:
+	#---------------
+	addi t1, t1, 1
+	jal LP17
+LE17:
+
+mv ra, s6
+ret
+
+playerSpritePicker:
+mv s6, ra
+la s0, playerSprite
+la s1, playerMove
+lb s1, 0(s1)
+
+li t0, 0
+bne s1, t0, EP45
+	la t0, pruc1
+	sw t0, 0(s0)
+	jal EP48
+EP45:
+
+li t0, 1
+bne s1, t0, EP46
+	jal EP48
+EP46:
+
+li t0, 2
+bne s1, t0, EP47
+	la t0, pruc
+	sw t0, 0(s0)
+	jal EP48
+EP47:
+
+li t0, 3
+bne s1, t0, EP48
+	#tá vazio por enquanto
+EP48:
+
+mv ra, s6
+ret
 
 ####################################################################################
 # você coloca um número (n) a0 e a função retorna (n-1) se (n > 3) e (3) se (n == 0)
