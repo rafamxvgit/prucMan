@@ -37,9 +37,14 @@ fnMem2: .word 0,0,0,0,0,0,0,0
 
 numAddresses: .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
 
+anims0: .word 0, 
+0, 0, 0, 0
+
+anims2: .word 0,
+0, 0, 0, 0
+
 .include "normalPoint.data"
 .include "mapa2.data"
-.include "bloco.data"
 .include "pruc.data"
 .include "pruc1.data"
 .include "colisao.data"
@@ -56,6 +61,16 @@ numAddresses: .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 .include "n7.data"
 .include "n8.data"
 .include "n9.data"
+
+.include "p00.data"
+.include "p01.data"
+.include "p02.data"
+.include "p03.data"
+
+.include "p20.data"
+.include "p21.data"
+.include "p22.data"
+.include "p23.data"
 
 .text
 
@@ -102,6 +117,38 @@ sw t1, 32(t0)
 la t1, n9
 addi t1, t1, 8
 sw t1, 36(t0)
+
+#---------------------
+la t0, anims0
+
+la t1, p00
+sw t1, 4(t0)
+
+la t1, p01
+sw t1, 8(t0)
+
+la t1, p02
+sw t1, 12(t0)
+
+la t1, p03
+sw t1, 16(t0)
+
+#---------------------
+
+la t0, anims2
+
+la t1, p20
+sw t1, 4(t0)
+
+la t1, p21
+sw t1, 8(t0)
+
+la t1, p22
+sw t1, 12(t0)
+
+la t1, p23
+sw t1, 16(t0)
+#---------------------
 
 #renderiza o mapa
 la a0, mapa2
@@ -1319,8 +1366,25 @@ lb s1, 0(s1)
 
 li t0, 0
 bne s1, t0, EP45
-	la t0, pruc1
-	sw t0, 0(s0)
+	la t0, anims0
+
+	lw t1, 0(t0)
+
+	li t2, 15
+	bne t1, t2, EP50
+		li t1, -1
+	EP50:
+	addi t1, t1, 1
+	sw t1, 0(t0)
+
+	srli t1, t1, 2
+	slli t1, t1, 2
+	addi t1, t1, 4
+	add t1, t1, t0 #endereço da imagem
+
+	lw t1, 0(t1)
+	
+	sw t1, 0(s0)
 	jal EP48
 EP45:
 
@@ -1331,8 +1395,25 @@ EP46:
 
 li t0, 2
 bne s1, t0, EP47
-	la t0, pruc
-	sw t0, 0(s0)
+	la t0, anims2
+
+	lw t1, 0(t0)
+
+	li t2, 15
+	bne t1, t2, EP49
+		li t1, -1
+	EP49:
+	addi t1, t1, 1
+	sw t1, 0(t0)
+
+	srli t1, t1, 2
+	slli t1, t1, 2
+	addi t1, t1, 4
+	add t1, t1, t0 #endereço da imagem
+
+	lw t1, 0(t1)
+	
+	sw t1, 0(s0)
 	jal EP48
 EP47:
 
