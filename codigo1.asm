@@ -29,6 +29,16 @@ enm1Intention: .byte 0
 enm1Pos: .word 48, 16
 enm1LastPos: .word 32, 16
 enm1State: .byte 1
+enm1MovePattern: .word 0 
+.byte 0, 3, 1, 3, 3, 1, 1, 3, 3, 1, 3
+
+enm2Move: .byte 0
+enm2Intention: .byte 0
+enm2Pos: .word 160, 96
+enm2LastPos: .word 160, 96
+enm2State: .byte 1
+enm2MovePattern: .word 0 
+.byte 0, 3, 1, 3, 3, 1, 1, 3, 3, 1, 3
 
 counterNaoMexe: .byte 0
 
@@ -42,6 +52,7 @@ anims0: .word 0,
 
 anims2: .word 0,
 0, 0, 0, 0
+
 
 .include "normalPoint.data"
 .include "mapa2.data"
@@ -164,6 +175,15 @@ lw a1, 0(a1)
 li a3, 123
 jal solidColorTileRender
 
+#renderiza a colisão inicial do inimigo2
+la a0, colisao
+addi a0, a0, 8
+la a1, enm2Pos
+lw a2, 4(a1)
+lw a1, 0(a1)
+li a3, 124
+jal solidColorTileRender
+
 #início do game loop
 start:
 
@@ -173,13 +193,60 @@ jal checkLeftEnd
 la a0, playerPos
 jal checkRightEnd
 
+la s0, enm1MovePattern
+lw s1, 0(s0)
+li t2, 20
+blt s1, t2, EP51
+	li s1, -1
+	lb s2, 4(s0)
+
+	li t2, 11
+	blt s2, t2, EP52
+		li s2, 0
+	EP52:
+	addi s2, s2, 1
+	sb s2, 4(s0)
+
+	add t2, s0, s2
+	lb t2, 4(t2)
+
+	la t3, enm1Intention
+	sb t2, 0(t3)
+
+EP51:
+addi s1, s1, 1
+sw s1, 0(s0)
+
+la s0, enm2MovePattern
+lw s1, 0(s0)
+li t2, 20
+blt s1, t2, EP53
+	li s1, -1
+	lb s2, 4(s0)
+
+	li t2, 11
+	blt s2, t2, EP54
+		li s2, 0
+	EP54:
+	addi s2, s2, 1
+	sb s2, 4(s0)
+
+	add t2, s0, s2
+	lb t2, 4(t2)
+
+	la t3, enm2Intention
+	sb t2, 0(t3)
+
+EP53:
+addi s1, s1, 1
+sw s1, 0(s0)
+
 la t0, counterNaoMexe
 lb t0, 0(t0)
 bne t0, zero, EP26
  
 	# lê a intenção do player
 	jal readKeyboard
-
 	
 	#define a movimentação do player
 	la a0, playerIntention
@@ -199,6 +266,14 @@ la a3, colisao
 addi a3, a3, 8
 jal entityMove
 
+#define a movimentação do inimigo
+la a0, enm2Intention
+la a1, enm2Move
+la a2, enm2Pos
+la a3, colisao
+addi a3, a3, 8
+jal entityMove
+
 #altera a posição do player
 la a0, playerPos
 la a1, playerLastPos
@@ -209,6 +284,12 @@ jal changeEntityPos
 la a0, enm1Pos
 la a1, enm1LastPos
 la a2, enm1Move
+jal changeEntityPos
+
+#altera a posição do inimigo
+la a0, enm2Pos
+la a1, enm2LastPos
+la a2, enm2Move
 jal changeEntityPos
 
 #renderiza a colisão dos pontos
@@ -237,6 +318,21 @@ beq t0, zero, EP41
 	li a4, 123
 	jal moveEntityCollision
 EP41:
+
+la t0, enm2State
+lb t0, 0(t0)
+beq t0, zero, EP59
+	#renderiza a colisão do inimigo 1
+	la a0, colisao
+	addi a0, a0, 8 
+	la a1, enm2Pos
+	lw a2, 4(a1)
+	lw a1, 0(a1)
+	la a3, enm2Move
+	lb a3, 0(a3)
+	li a4, 124
+	jal moveEntityCollision
+EP59:
 
 #verifica se o player pegou o ponto
 la a0, colisao
@@ -268,19 +364,38 @@ la t0, supPointMode
 lw t0, 0(t0)
 bne t0, zero, EP38
 	#---------------------------------
-	#caso de colisão com o inimigo 1
-	la a0, colisao
-	addi a0, a0, 8
-	la a2, playerPos
-	lw a1, 0(a2)
-	lw a2, 4(a2)
-	li a3, 123
-	jal isEntityTouching
-	beq a0, zero, EP33
-		li a7, 10
-		ecall
-	EP33:  
+	la t0, enm1State
+	lb t0, 0(t0)
+	beq zero, t0, EP33
+		#caso de colisão com o inimigo 1
+		la a0, colisao
+		addi a0, a0, 8
+		la a2, playerPos
+		lw a1, 0(a2)
+		lw a2, 4(a2)
+		li a3, 123
+		jal isEntityTouching
+		beq a0, zero, EP33
+			li a7, 10
+			ecall
+		EP33:  
 	#---------------------------------
+	
+	la t0, enm2State
+	lb t0, 0(t0)
+	beq zero, t0, EP40
+		#caso de colisão com o inimigo 2
+		la a0, colisao
+		addi a0, a0, 8
+		la a2, playerPos
+		lw a1, 0(a2)
+		lw a2, 4(a2)
+		li a3, 124
+		jal isEntityTouching
+		beq a0, zero, EP58
+			li a7, 10
+			ecall
+		EP58:  
 
 	jal EP40
 
@@ -289,26 +404,51 @@ EP38:
 	#verifica se o inimigo deve ir de base
 
 	#caso de colisão com o inimigo 1
-	la a0, colisao
-	addi a0, a0, 8
-	la a2, playerPos
-	lw a1, 0(a2)
-	lw a2, 4(a2)
-	li a3, 123
-	jal isEntityTouching
-	beq a0, zero, EP39
-		la t0, enm1State
-		sb zero, 0(t0)
+	la t0, enm1State
+	lb t0, 0(t0)
+	beq zero, t0, EP39
+		la a0, colisao
+		addi a0, a0, 8
+		la a2, playerPos
+		lw a1, 0(a2)
+		lw a2, 4(a2)
+		li a3, 123
+		jal isEntityTouching
+		beq a0, zero, EP39
+			la t0, enm1State
+			sb zero, 0(t0)
 		
-		la t1, enm1LastPos
-		lw a0, 0(t1)
-		lw a1, 4(t1)
-		la a2, mapa2
-		addi a2, a2, 8
-		jal tileUnrender
+			la t1, enm1LastPos
+			lw a0, 0(t1)
+			lw a1, 4(t1)
+			la a2, mapa2
+			addi a2, a2, 8
+			jal tileUnrender
 	EP39:
 	#---------------------------------
-
+	la t0, enm2State
+	lb t0, 0(t0)
+	beq zero, t0, EP57
+		#caso de colisão com o inimigo 1
+		la a0, colisao
+		addi a0, a0, 8
+		la a2, playerPos
+		lw a1, 0(a2)
+		lw a2, 4(a2)
+		li a3, 124
+		jal isEntityTouching
+		beq a0, zero, EP57
+			la t0, enm2State
+			sb zero, 0(t0)
+		
+			la t1, enm2LastPos
+			lw a0, 0(t1)
+			lw a1, 4(t1)
+			la a2, mapa2
+			addi a2, a2, 8
+			jal tileUnrender
+			jal EP40
+		EP57:
 EP40:
 
 #renderiza os pontos
@@ -346,6 +486,18 @@ beq t0, zero, EP43
 	jal tileUnrender
 EP43:
 
+la t0, enm2State
+lb t0, 0(t0)
+beq t0, zero, EP55
+	#desrenderiza o inimigo
+	la t1, enm2LastPos
+	lw a0, 0(t1)
+	lw a1, 4(t1)
+	la a2, mapa2
+	addi a2, a2, 8
+	jal tileUnrender
+EP55:
+
 #escolhe a imagem do player a se renderizar
 
 jal playerSpritePicker
@@ -370,6 +522,18 @@ beq t0, zero, EP42
 	addi a2, a2, 8
 	jal tileRender
 EP42:
+
+la t0, enm2State
+lb t0, 0(t0)
+beq t0, zero, EP56
+	#renderiza o inimigo
+	la t0, enm2Pos
+	lw a0, 0(t0)
+	lw a1, 4(t0)
+	la a2, gato1
+	addi a2, a2, 8
+	jal tileRender
+EP56:
 
 #renderiza o contador de pontos
 la a0, contadorPontos
