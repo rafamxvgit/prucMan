@@ -46,9 +46,6 @@ supPts:
 .word 1,
 7, 96, 80
 
-fnMem1: .word 0,0,0,0,0,0,0,0
-fnMem2: .word 0,0,0,0,0,0,0,0
-
 .include "nums.data"
 .include "normalPoint.data"
 .include "ptMax.data"
@@ -69,6 +66,37 @@ fnMem2: .word 0,0,0,0,0,0,0,0
 .text
 
 #renderiza o mapa
+
+#---------------------
+la t0, anims0
+
+la t1, p00
+sw t1, 4(t0)
+
+la t1, p01
+sw t1, 8(t0)
+
+la t1, p02
+sw t1, 12(t0)
+
+la t1, p03
+sw t1, 16(t0)
+#---------------------
+la t0, anims2
+
+la t1, p20
+sw t1, 4(t0)
+
+la t1, p21
+sw t1, 8(t0)
+
+la t1, p22
+sw t1, 12(t0)
+
+la t1, p23
+sw t1, 16(t0)
+#---------------------
+
 la a0, mapa
 jal mapRender
 
@@ -85,26 +113,60 @@ jal collTileRender
 start:
 #-------------------
 
+#checagem das bordas
+jal checkEnds
+
+#renderiza o contador de pontos
+la a0, counterPts
+lb a0, 0(a0)
+li a1, 2
+li a3, 0
+li a4, 0
+jal renderNum
+
+#renderiza o contador de super
+la a0, supPtMode
+lw a0, 0(a0)
+li a1, 3
+li a3, 64
+li a4, 0
+jal renderNum
+
 #lê a intenção do player
 jal readKeyboard
 
+#checa se o player deve ou não poder mudar de direção
+la t0, counterNaoMexe
+lb t0, 0(t0)
+bne t0, zero, EP26
+
 #define a movimentação do player.
 jal movePlayer
+
+EP26:
 
 #move o player.
 la a0, playerPos
 la a1, playerMove
 jal changeEntityPos
 
+#vê se o player está colidindo com alguma coisa
 la a0, playerPos
 lw a1, 4(a0)
 lw a0, 0(a0)
 jal returnCol
 
-#checa os casos de colisão
-jal collisionCases
+li t0, -1
+beq a0, t0, EP30
+	#checa os casos de colisão
+	jal collisionCases
+EP30:
 
 #renderiza a colisão dos pontos. do
+la a0, pts
+jal rendPtsColl
+
+la a0, supPts
 jal rendPtsColl
 
 #desrenderiza o player. do
@@ -115,15 +177,39 @@ la a2, mapa
 jal unrenderTile
 
 #renderiza os pontos
+la a0, pts
+la a1, normalPoint
 jal renderPoints
+
+la a0, supPts
+la a1, ptMax
+jal renderPoints
+
+jal playerSpritePicker
 
 #renderiza o player. do
 la a0, playerPos
 lw a1, 4(a0)
 lw a0, 0(a0)
-la a2, p03
+la a2, playerSpriteAdd
+lw a2, 0(a2)
 addi a2, a2, 8
 jal tileRender
+
+#decrementa os counters
+la t0, counterNaoMexe
+lb t1, 0(t0)
+beq t1, zero, EP27
+	addi t1, t1, -1
+	sb t1, 0(t0)
+EP27:
+
+la t0, supPtMode
+lw t1, 0(t0)
+beq t1, zero, EP31
+	addi t1, t1, -1
+	sw t1, 0(t0)
+EP31:
 
 # espera um tempinho. do
 li a7, 32
@@ -464,25 +550,24 @@ bne, s2, t1, EP19
 EP19:
 ret
 
-################################
-# renderiza a colisão dos pontos
-################################
+#################################
+# a0 <- quais conjuntos de pontos
+#################################
 
 rendPtsColl:
-la s0, pts
 la s4, col
-lw t0, 0(s0) #n pts
-addi s0, s0, 4
+lw t0, 0(a0) #n pts
+addi a0, a0, 4
 li t1, 12
 mul t0, t0, t1
-add t0, t0, s0
+add t0, t0, a0
 
 LP8:
-	bge s0, t0, LE8
+	bge a0, t0, LE8
 	#--------------
-	lw s1, 0(s0) # cor
-	lw s2, 4(s0) # x
-	lw s3, 8(s0) # y
+	lw s1, 0(a0) # cor
+	lw s2, 4(a0) # x
+	lw s3, 8(a0) # y
 
 	beq s1, zero, EP20
 		li t1, 320
@@ -497,38 +582,37 @@ LP8:
 		sb s1, 0(t2)
 	EP20:
 	#--------------
-	addi s0, s0, 12
+	addi a0, a0, 12
 	jal zero, LP8
 LE8:
 
 ret
 
-####################
-#Renderiza os pontos
-####################
+#########################
+#a0 <- conjunto de pontos
+#a1 <- a imagem do ponto
+#########################
 
 renderPoints:
-la s0, pts
 li s1, tela
 li s5, 320
-la s7, normalPoint
-addi s7, s7, 8
-lw s2, 0(s0) #n pts
-addi s0, s0, 4
+addi a1, a1, 8
+lw s2, 0(a0) #n pts
+addi a0, a0, 4
 li t0, 12
 mul s2, s2, t0
-add s2, s2, s0
+add s2, s2, a0
 
 LP9:
-	bge s0, s2, LE9
+	bge a0, s2, LE9
 	#--------------
-	lw t0, 0(s0) # cor do ponto
+	lw t0, 0(a0) # cor do ponto
 	beq t0, zero, EP21
-		lw s3, 4(s0) # x
+		lw s3, 4(a0) # x
 		addi s3, s3, 4
-		lw s4, 8(s0) # y
+		lw s4, 8(a0) # y
 		addi s4, s4, 4
-		mv s8, s7 #imagem
+		mv s8, a1 #imagem
 		
 		mul t1, s4, s5
 		add t1, t1, s3
@@ -557,7 +641,7 @@ LP9:
 		
 	EP21:
 	#--------------
-	addi s0, s0, 12
+	addi a0, a0, 12
 	jal zero, LP9
 LE9:
 ret
@@ -696,6 +780,54 @@ LP12:
 
 LE12: 
 
+la s0, supPts
+lw t0, 0(s0)
+li t1, 12
+mul t0, t0, t1
+addi s0, s0, 4
+add s1, s0, t0
+LP33:
+	bge s0, s1, LE33
+	#---------------
+	lw t0, 0(s0)
+	bne t0, a0, EP29
+		#---------------
+
+		#adiciona o ponto no contador
+		sw zero, 0(s0)
+
+		#seta o modo super
+		li t2, 600
+		la t1, supPtMode
+		sw t2, 0(t1)
+
+		#apaga o ponto
+		mv s6, ra
+		lw s10, 4(s0)
+		lw s11, 8(s0)
+		mv a0, s10
+		mv a1, s11
+		la a2, mapa
+		jal unrenderTile
+
+		#apaga a colisão do ponto
+		la a0, col
+		mv a1, s10
+		mv a2, s11
+		li a3, 0
+		jal singlePtRender
+
+		mv ra, s6
+		ret
+		
+		#---------------
+	EP29:
+	#---------------
+	addi s0, s0, 12
+	jal zero, LP33
+
+LE33: 
+
 #checa a colisão com os inimigos
 
 #-------------------------------
@@ -719,5 +851,213 @@ sb a3, 15(t0)
 li t1, 4800
 add t1, t1, t0
 sb a3, 0(t1)
+
+ret
+
+##########################################################################
+#Descrição: verifica se o player chegou em alguma das extremidades da tela
+##########################################################################
+
+checkEnds:
+la t0, counterNaoMexe
+lb t1, 0(t0)
+bne t1, zero, EP25 
+	la s0, playerPos
+	lw s1, 0(s0)
+
+	bne s1, zero, EP24 #se chegar na esquerda
+
+		li t1, 18
+		sb t1, 0(t0)
+
+		mv s6, ra
+		mv a0, s1
+		lw a1, 4(s0)
+		la a2, mapa
+		addi s1, s1, 320
+		sw s1, 0(s0)
+		jal unrenderTile
+		mv ra, s6
+		ret
+	EP24:
+
+	li t2, 304
+	bne s1, t2, EP28 #se chegar na esquerda
+
+		li t1, 18
+		sb t1, 0(t0)
+
+		mv s6, ra
+		mv a0, s1
+		lw a1, 4(s0)
+		la a2, mapa
+		addi s1, s1, -320
+		sw s1, 0(s0)
+		jal unrenderTile
+		mv ra, s6
+		ret
+	EP28:
+
+	
+EP25:
+ret
+
+#########################
+# a0 <- numero
+# a1 <- numero de digitos
+# a3 <- x
+# a4 <- y
+#########################
+
+renderNum:
+mv s6, ra	
+addi a1, a1, -1
+jal pow
+
+mv a5, a4 #y
+mv a4, a3 #x
+mv a3, a0 #numero
+mv s10, a2 #potencia
+
+li s4, 10
+li t0, 1
+
+LP32:
+	beq s10, t0, LE32
+	#---------------
+	div t5, a3, s10
+	rem a3, a3, s10
+
+	mv a0, t5
+	mv a1, a4
+	mv a2, a5
+	jal renderDigit
+
+	addi a4, a4, 8
+	#---------------
+	div s10, s10, s4
+	jal zero, LP32
+LE32:
+
+mv a0, a3
+mv a1, a4
+mv a2, a5
+jal renderDigit
+
+mv ra, s6
+ret
+
+#############
+#a0 <- digito
+#a1 <- x
+#a2 <- y
+#############
+
+renderDigit:
+la s0, nums
+li s1, 128
+mul s1, s1, a0
+add s1, s1, s0
+li s2, tela
+li s3, 320
+
+mul t1, s3, a2
+add t1, t1, a1
+add t1, t1, s2
+li t2, 5120
+add t2, t2, t1
+
+LP29:
+	bge t1, t2, LE29
+	#---------------
+	addi t3, t1, 8
+	LP30:
+		bge t1, t3, LE30
+		#---------------
+		lb t4, 0(s1)
+		sb t4, 0(t1)
+		addi s1, s1, 1
+		#---------------
+		addi t1, t1, 1
+		jal zero, LP30 
+	LE30: 
+	#---------------
+	addi t1, t1, 312
+	jal zero, LP29
+LE29:
+ret
+
+###############
+#a1 <- expoente
+###############
+
+pow:
+li t0, 0
+li t1, 1
+li t2, 10
+LP31:
+	bge t0, a1, LE31
+	#---------------
+	mul t1, t1, t2
+	#---------------
+	addi t0, t0, 1
+	jal zero, LP31
+LE31:
+mv a2, t1
+ret
+
+
+playerSpritePicker:
+la s0, playerSpriteAdd
+la s1, playerMove
+lb s1, 0(s1)
+
+li t0, 0
+bne s1, t0, EP45
+	la t0, anims0
+	lw t1, 0(t0)
+	li t2, 15
+	bne t1, t2, EP50
+		li t1, -1
+	EP50:
+	addi t1, t1, 1
+	sw t1, 0(t0)
+	srli t1, t1, 2
+	slli t1, t1, 2
+	addi t1, t1, 4
+	add t1, t1, t0 #endereço da imagem
+	lw t1, 0(t1)
+	sw t1, 0(s0)
+	jal zero, EP48
+EP45:
+
+li t0, 1
+bne s1, t0, EP46
+	ret
+EP46:
+
+li t0, 2
+bne s1, t0, EP47
+	la t0, anims2
+	lw t1, 0(t0)
+	li t2, 15
+	bne t1, t2, EP49
+		li t1, -1
+	EP49:
+	addi t1, t1, 1
+	sw t1, 0(t0)
+	srli t1, t1, 2
+	slli t1, t1, 2
+	addi t1, t1, 4
+	add t1, t1, t0 #endereço da imagem
+	lw t1, 0(t1)
+	sw t1, 0(s0)
+	jal zero, EP48
+EP47:
+
+li t0, 3
+bne s1, t0, EP48
+	ret
+EP48:
 
 ret
