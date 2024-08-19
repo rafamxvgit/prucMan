@@ -1240,7 +1240,7 @@ LP11:
 	
 	#---------------
 	addi t1, t1, 1
-	jal LP11
+	jal zero, LP11
 LE11:
 
 mv ra, s6
