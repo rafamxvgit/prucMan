@@ -172,6 +172,15 @@ jal rendPtsColl
 la a0, supPts
 jal rendPtsColl
 
+#renderiza os pontos
+la a0, pts
+la a1, normalPoint
+jal renderPoints
+
+la a0, supPts
+la a1, ptMax
+jal renderPoints
+
 #desrenderiza o inimigo. do
 la a0, enm1Pos
 lw a1, 12(a0)
@@ -204,17 +213,6 @@ la a2, playerSpriteAdd
 lw a2, 0(a2)
 addi a2, a2, 8
 jal tileRender
-
-#renderiza os pontos
-la a0, pts
-la a1, normalPoint
-jal renderPoints
-
-la a0, supPts
-la a1, ptMax
-jal renderPoints
-
-
 
 #decrementa os counters
 la t0, counterNaoMexe
@@ -1083,173 +1081,268 @@ EP48:
 ret
 
 normalMoveEnm1:
-li s5, 0
+mv s6, ra
 la s10, enm1Pos
 la s11, enm1Move
 la s9, playerPos
-mv s6, ra
 
-lb t0, 0(s11)
-andi t1, t0, 1
-beq t1, zero, PAR
-	IMPAR:
-	#se eu estiver me locomovendo na vertical
-	lw t1, 0(s10) #meu x
-	lw t2, 0(s9) #player x
-	beq t1, t2, PAR
-	blt t1, t2, DIR
-		#tenta ir para a esquerda
-		li s8, 2
-		jal zero, ND
-	DIR:
-		#tenta ir para a direita
-		li s8, 0
+lw t0, 0(s10) #meu x
+lw t1, 0(s9) #pl x
+lw t2, 4(s10) #meu y
+lw t3, 4(s9) #pl y
+lb t4, 0(s11)
 
-	ND:
+andi t4, t4, 1
+beq t0, t1, EQX
+beq t2, t3, EQY
+beq t4, zero, HOR
 
-	lw a0, 0(s10)
-	lw a1, 4(s10)
-	mv a2, s8
-	la a3, col
-	jal checkMapCollision
+VER:
 
-	beq a0, zero, FAIL0
-		sb s8, 0(s11)
-		jal zero, LOCOM
-	FAIL0:
+        blt t0, t1, DIR
+                li s8, 2
+                jal zero, ND0
+        DIR:
+                li s8, 0
+        ND0:
 
-	lw a0, 0(s10)
-	lw a1, 4(s10)
-	lb a2, 0(s11)
-	la a3, col
-	jal checkMapCollision
+        #vê se dá pra ir pra onde eu quero. do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        mv a2, s8
+        la a3, col
+        jal checkMapCollision
 
-	beq a0, zero FAIL1
-		jal zero, LOCOM
-	FAIL1:
+        beq a0, zero, FAIL0
+                sb s8, 0(s11)
+                jal zero, LOCOM
+        FAIL0:
 
-	li t1, 1
-	addi a2, s8, 1
-	beq s5, t1, OP1 
-		addi a2, a2, 1
-	OP1:
-	li t0, 4
-	blt a2, t0, EP32
-		addi a2, a2, -4
-	EP32:
+        #vê se dá pra ir pra onde eu já tô indo
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        lb a2, 0(s11)
+        la a3, col
+        jal checkMapCollision
 
-	lw a0, 0(s10)
-	lw a1, 4(s10)
-	la a3, col
-	jal checkMapCollision
-	
-	beq a0, zero FAIL2
-		sb a2, 0(s11)
-		jal zero, LOCOM
-	FAIL2:
+        beq a0, zero, FAIL2
+                jal zero, LOCOM
+        FAIL2:
 
-	lb s8, 0(s11)
-	addi a2, s8, 2
-	beq zero, s5, OP2
-		addi a2, a2, 1
-	OP2:
+        #vê se dá pra ir pra o lado contrário de onde eu quero ir
+        addi a2, s8, 2
+        li t0, 4
+        blt a2, t0, ND3 
+                addi a2, a2, -4
+        ND3:
 
-	li t0, 4
-	blt a2, t0, EP33
-		addi a2, a2, -4
-	EP33:
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        la a3, col
+        jal checkMapCollision
 
-	lw a0, 0(s10)
-	lw a1, 4(s10)
-	la a3, col
-	jal checkMapCollision
+        beq a0, zero, FAIL4
+                sb a2, 0(s11)
+                jal zero, LOCOM
+        FAIL4:
 
-	beq a0, zero FAIL3
-		sb a2, 0(s11)
-		jal zero, LOCOM
-	FAIL3:
+        #vê se dá pra ir pra o lado contrário de onde eu estou indo
+        lb a2, 0(s11)
+        addi a2, a2, 2
+        li t0, 4
+        blt a2, t0, ND5 
+                addi a2, a2, -4
+        ND5:
 
-	li s8, -1
-	sb s8, 0(s11)
-	jal zero, LOCOM
-	
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        la a3, col
+        jal checkMapCollision
 
-	
-PAR:
-	#se eu estiver me locomovendo na horizontal
-	lw t1, 4(s10) #meu y
-	lw t2, 4(s9) #player y
-	bne t1, t2, CONT
-		li s5, 1
-		jal zero, IMPAR
-	CONT:
-	bgt t1, t2, CIM
-		#tenta ir para a baixo
-		li s8, 3
-		jal zero, ND1
-	CIM:
-		#tenta ir para a cima
-		li s8, 1
-		jal zero, ND1
+        beq a0, zero, FAIL7
+                sb a2, 0(s11)
+                jal zero, LOCOM
+        FAIL7:
+HOR:
 
-	ND1:
-	lw a0, 0(s10)
-	lw a1, 4(s10)
-	mv a2, s8
-	la a3, col
-	jal checkMapCollision
+        blt t2, t3, BAIXO
+                li s8, 1
+                jal zero, ND1 
+        BAIXO:
+                li s8, 3
+        ND1:
+        
+        #vê se dá pra ir pra onde eu quero. do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        mv a2, s8
+        la a3, col
+        jal checkMapCollision 
 
-	beq a0, zero, FAIL4
-		sb s8, 0(s11)
-		jal zero, LOCOM
-	FAIL4:
+        beq a0, zero, FAIL1
+                sb s8, 0(s11)
+                jal zero, LOCOM
+        FAIL1:
 
-	lw a0, 0(s10)
-	lw a1, 4(s10)
-	lb a2, 0(s11)
-	la a3, col
-	jal checkMapCollision
+        #vê se dá pra ir pra onde eu já tô indo
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        lb a2, 0(s11)
+        la a3, col
+        jal checkMapCollision 
 
-	beq a0, zero FAIL5
-		jal zero, LOCOM
-	FAIL5:
+        beq a0, zero, FAIL3
+                jal zero, LOCOM
+        FAIL3:
 
-	addi a2, s8, 2
-	li t0, 4
-	blt a2, t0, EP34
-		addi a2, a2, -4
-	EP34:
+        #vê se dá pra ir pra o lado contrário de onde eu quero ir
+        addi a2, s8, 2
+        li t0, 4
+        blt a2, t0, ND2 
+                addi a2, a2, -4
+        ND2:
 
-	lw a0, 0(s10)
-	lw a1, 4(s10)
-	la a3, col
-	jal checkMapCollision
-	
-	beq a0, zero FAIL6
-		sb a2, 0(s11)
-		jal zero, LOCOM
-	FAIL6:
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        la a3, col
+        jal checkMapCollision
 
-	lw s8, 0(s11)
-	addi a2, s8, 2
-	li t0, 4
-	blt a2, t0, EP35
-		addi a2, a2, -4
-	EP35:
+        beq a0, zero, FAIL5
+                sb a2, 0(s11)
+                jal zero, LOCOM
+        FAIL5:
 
-	lw a0, 0(s10)
-	lw a1, 4(s10)
-	la a3, col
-	jal checkMapCollision
+        #vê se dá pra ir pra o lado contrário de onde eu estou indo
+        lb a2, 0(s11)
+        addi a2, a2, 2
+        li t0, 4
+        blt a2, t0, ND4 
+                addi a2, a2, -4
+        ND4:
 
-	beq a0, zero FAIL7
-		sb a2, 0(s11)
-		jal zero, LOCOM
-	FAIL7:
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        la a3, col
+        jal checkMapCollision
 
-	li s8, -1
-	sb s8, 0(s11)
-	jal zero, LOCOM
+        beq a0, zero, FAIL6
+                sb a2, 0(s11)
+                jal zero, LOCOM
+        FAIL6:
+EQX:
+
+        blt t2, t3, BAIXO1
+                li s8, 1
+                jal zero, ND7 
+        BAIXO1:
+                li s8, 3
+        ND7:
+
+        #vê se dá pra ir pra onde eu quero. do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        mv a2, s8
+        la a3, col
+        jal checkMapCollision 
+
+        beq a0, zero, FAIL12
+                sb s8, 0(s11)
+                jal zero, LOCOM
+        FAIL12:
+
+        #vê se dá pra ir pra onde eu já to indo do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        lb a2, 0(s11)
+        lb a3, col
+        jal checkMapCollision
+
+        beq a0, zero, FAIL13
+                jal zero, LOCOM
+        FAIL13:
+
+        #vê se dá pra ir pra esquerda. do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        li a2, 2
+        la a3, col
+        jal checkMapCollision
+
+        beq a0, zero, FAIL14
+                sb a2, 0(s11)
+                jal zero, LOCOM
+        FAIL14:
+
+        #vê se dá pra ir pra direita. do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        li a2, 0
+        la a3, col
+        jal checkMapCollision
+
+        beq a0, zero, FAIL15
+                sb a2, 0(s11)
+                jal zero, LOCOM
+        FAIL15:
+
+        
+        
+
+EQY:
+        blt t0, t1, DIR1
+                li s8, 2
+                jal zero, ND6
+        DIR1:
+                li s8, 0
+        ND6:
+
+        #vê se dá pra ir pra onde eu quero. do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        mv a2, s8
+        la a3, col
+        jal checkMapCollision 
+
+        beq a0, zero, FAIL8
+                sb s8, 0(s11)
+                jal zero, LOCOM
+        FAIL8:
+
+        #vê se dá pra ir pra onde eu já to indo do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        lb a2, 0(s11)
+        la a3, col
+        jal checkMapCollision
+
+        beq a0, zero, FAIL9
+                jal zero, LOCOM
+        FAIL9:
+
+        #vê se dá pra ir pra cima. do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        li a2, 1
+        la a3, col
+        jal checkMapCollision
+
+        beq a0, zero, FAIL10
+                sb a2, 0(s11)
+                jal zero, LOCOM
+        FAIL10:
+
+        #vê se dá pra ir pra baixo. do
+        lw a0, 0(s10)
+        lw a1, 4(s10)
+        li a2, 3
+        la a3, col
+        jal checkMapCollision
+
+        beq a0, zero, FAIL11
+                sb a2, 0(s11)
+                jal zero, LOCOM
+        FAIL11:
+        
 
 LOCOM:
 
