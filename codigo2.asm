@@ -41,22 +41,73 @@ counterNaoMexe: .byte 0
 supPtMode: .word 0
 
 pts:
-.word 5,
-2,16,80, 
-3,48,80, 
-4,80,80,
-5,112,80,
-6,144,80
+.word 22,
+2, 16, 80, 
+3, 80, 80,
+4, 80, 16,
+5, 112, 16,
+6, 128, 80,
+7, 176, 80,
+8, 192, 16,
+9, 224, 16,
+10, 288, 16,
+11, 304, 80,
+
+12,16,208, 
+13,48,144,
+14,80,208,
+15,112,144,
+16, 112, 208,
+17, 192, 208,
+18, 208, 144,
+19, 224, 208,
+20, 304, 144,
+
+21, 32, 112,
+22, 96, 112,
+23, 208, 112,
+24, 272, 112
+
+ptsMap2:
+.word 18,
+2, 96, 16,
+3, 48, 48,
+4, 48, 96,
+5, 96, 80,
+6, 128, 16,
+7, 208, 16,
+8, 240, 208,
+9, 256, 144,
+10, 96, 176,
+11, 16, 208,
+12, 256, 112,
+13, 240, 48,
+14, 208, 176,
+15, 208, 80,
+16, 144, 176,
+17, 288, 112,
+18, 288, 48,
+19, 176, 64,
+20, 176, 16
+
 
 supPts:
-.word 1,
-7, 96, 80
+.word 2,
+25, 288, 208,
+26, 288, 48
+
+supPtsMap2: 
+.word 2,
+25, 288, 208,
+26, 288, 48
 
 .include "nums.data"
 .include "normalPoint.data"
 .include "ptMax.data"
 .include "mapa.data"
+.include "mapa3.data"
 .include "col.data"
+.include "col2.data"
 .include "gato1.data"
 
 .include "p00.data"
@@ -102,6 +153,8 @@ sw t1, 12(t0)
 la t1, p23
 sw t1, 16(t0)
 #---------------------
+
+ST:
 
 la a0, mapa
 jal mapRender
@@ -398,6 +451,10 @@ beq s1, zero, EP1
 		sb zero, 0(s3)
 		ret
 	EP5:
+	li t0, 32
+	bne s2, t0, EP67
+		jal levelTransition
+	EP67:
 EP1:
 ret
 
@@ -1825,12 +1882,22 @@ mv a1, s10
 jal changeEntityPos
 
 la a0, col
-lw a1, 8(s11)
-lw a2, 12(s11)
-lb a3, 0(s10)
+la a1, enm3Pos
+lw a2, 12(a1)
+lw a1, 8(a1)
+la a3, enm3Move
+lb a3, 0(a3)
 la a4, enm3Col
 lb a4, 0(a4)
 jal moveEntityCollision
+
+#la a0, col
+#lw a1, 8(s11)
+#lw a2, 12(s11)
+#lb a3, 0(s10)
+#la a4, enm3Col
+#lb a4, 0(a4)
+#jal moveEntityCollision
 
 mv ra, s6
 ret
@@ -1847,7 +1914,7 @@ bne t0, zero, EP66
 	lw a0, 0(a0)
 	la a2, mapa
 	jal unrenderTile
-
+	
 	la t0, enm3Pos
 	la a0, col
 	lw a1, 0(t0)
@@ -1888,3 +1955,114 @@ sw t0, 4(s9)
 
 mv ra, s6
 ret
+
+levelTransition:
+
+la t0, mapa
+la t1, col2
+
+li t2, 76800
+add t2, t2, t0
+LP38:
+	bge t0, t2, LE38
+	#----------------
+	lb t3, 0(t1)
+	sb t3, 0(t0)
+	#----------------
+	addi t1, t1, 1
+	addi t0, t0, 1
+	jal LP38
+LE38:
+
+la t0, col
+la t1, col2
+li t2, 76800
+add t2, t2, t0
+LP39:
+	bge t0, t2, LE39
+	#---------------
+	lb t3, 0(t1)
+	sb t3, 0(t0)
+	#---------------
+	addi t1, t1, 1
+	addi t0, t0, 1
+	jal LP39
+LE39:
+
+la t0, playerPos
+li t1, 16
+sw t1, 0(t0)
+sw t1, 4(t0)
+sw t1, 8(t0)
+sw t1, 12(t0)
+
+la t0, enm1Pos
+li t1, 288
+li t2, 16
+sw t1, 0(t0)
+sw t1, 8(t0)
+sw t2, 4(t0)
+sw t2, 12(t0)
+
+la t0, enm1State
+li t1, 1
+sb t1, 0(t0)
+
+la t0, enm2Pos
+li t1, 208
+sw t1, 4(t0)
+sw t1, 12(t0)
+sw t2, 0(t0)
+sw t2, 8(t0)
+
+la t0, enm2State
+li t1, 1
+sb t1, 0(t0)
+
+la t0, enm3Pos
+li t2, 288
+li t1, 208
+sw t1, 4(t0)
+sw t1, 12(t0)
+sw t2, 0(t0)
+sw t2, 8(t0)
+
+la t0, enm3State
+li t1, 1
+sb t1, 0(t0)
+
+la t0, counterPts
+sb zero, 0(t0)
+
+la t0, pts
+la t1, ptsMap2
+
+addi t2, t1, 232
+
+LP40:
+	bge t1, t2, LE40
+	#---------------
+	lw t3, 0(t1)
+	sw t3, 0(t0)
+	#---------------
+	addi t1, t1, 4
+	addi t0, t0, 4
+	jal LP40
+LE40:
+
+la t0, supPts
+la t1, supPtsMap2
+addi t2, t1, 28
+
+LP41:
+	bge t1, t2, LE41
+	#---------------
+	lw t3, 0(t1)
+	sw t3, 0(t0)
+	#--------------
+	addi t1, t1, 4
+	addi t0, t0, 4
+	jal LP41
+LE41:
+
+jal ST
