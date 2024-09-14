@@ -17,24 +17,24 @@ anims2: .word 0,
 enm1Pos: .word 288, 16, 288, 16
 enm1Move: .byte 3
 enm1Col: .byte 100
-enm1State: .byte 1
+enm1State: .byte 0
 
 enm2Pos: .word 48, 16, 48, 16
 enm2Move: .byte 0
 enm2Col: .byte 101
-enm2State: .byte 1
+enm2State: .byte 0
 
 enm3Pos: .word 48, 208, 48, 208
 enm3Move: .byte 0
 enm3Col: .byte 102
-enm3State: .byte 1
+enm3State: .byte 0
 enm3TpTimer: .word 500, 80
 enm3TpAddress: .word 16, 16
 
 enm4Pos: .word 128, 16, 128, 16
 enm4Move: .byte 0
 enm4Col: .byte 103
-enm4State: .byte 1
+enm4State: .byte 0
 
 counterPts: .byte 0
 counterNaoMexe: .byte 0
@@ -110,7 +110,9 @@ notas: .word 9, 0, 0,
 70, 500, 0,
 69, 500, 0,
 67, 500, 0,
-66, 500, 0,
+66, 500, 0
+
+level: .word 0
 
 .include "nums.data"
 .include "normalPoint.data"
@@ -174,6 +176,24 @@ jal mapRender
 #início do game loop
 start:
 #-------------------
+
+la t0, level
+lw t0, 0(t0)
+beq t0, zero, CTN
+	la t0, counterPts
+	lb t0, 0(t0)
+	li t1, 18
+	bne t0, t1, CTN
+		li a7, 10
+		ecall
+CTN:
+
+la t0, counterPts
+lb t0, 0(t0)
+li t1, 22 
+bne t0, t1 SAMELEVEL
+	jal levelTransition	
+SAMELEVEL:
 
 #checagem das bordas
 jal checkEnds
@@ -993,6 +1013,8 @@ LP33:
 		mv a2, s11
 		li a3, 0
 		jal singlePtRender
+
+		jal changeDir
 
 		mv ra, s6
 		ret
@@ -2032,6 +2054,11 @@ ret
 
 levelTransition:
 
+la t0, level
+lw t1, 0(t0)
+addi t1, t1, 1
+sw t1, 0(t0)
+
 la t0, mapa
 la t1, mp2rev
 
@@ -2079,7 +2106,7 @@ sw t2, 4(t0)
 sw t2, 12(t0)
 
 la t0, enm1State
-li t1, 1
+li t1, 0
 sb t1, 0(t0)
 
 la t0, enm2Pos
@@ -2090,7 +2117,7 @@ sw t2, 0(t0)
 sw t2, 8(t0)
 
 la t0, enm2State
-li t1, 1
+li t1, 0
 sb t1, 0(t0)
 
 la t0, enm3Pos
@@ -2107,7 +2134,7 @@ sw t1, 0(t0)
 sw t1, 4(t0)
 
 la t0, enm3State
-li t1, 1
+li t1, 0
 sb t1, 0(t0)
 
 la t0, enm4Pos
@@ -2119,7 +2146,7 @@ sw t2, 4(t0)
 sw t2, 12(s0)
 
 la t0, enm4State
-li t1, 1
+li t1, 0
 sb t1, 0(t0)
 
 la t0, counterPts
@@ -2323,4 +2350,33 @@ jal moveEntityCollision
 
 
 mv ra, s6
+ret
+
+
+changeDir:
+la s0, enm1Move
+la s1, enm2Move
+la s2, enm3Move
+la s3, enm4Move
+
+lb t0, 0(s0)
+addi t0, t0, 2
+andi t0, t0, 3
+sb t0, 0(s0)
+
+lb t0, 0(s1)
+addi t0, t0, 2
+andi t0, t0, 3
+sb t0, 0(s1)
+
+lb t0, 0(s1)
+addi t0, t0, 2
+andi t0, t0, 3
+sb t0, 0(s1)
+
+lb t0, 0(s1)
+addi t0, t0, 2
+andi t0, t0, 3
+sb t0, 0(s1)
+
 ret
