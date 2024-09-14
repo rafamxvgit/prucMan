@@ -31,7 +31,7 @@ enm3State: .byte 1
 enm3TpTimer: .word 500, 80
 enm3TpAddress: .word 16, 16
 
-enm4Pos: .word 48, 16, 48, 16
+enm4Pos: .word 128, 16, 128, 16
 enm4Move: .byte 0
 enm4Col: .byte 103
 enm4State: .byte 1
@@ -116,7 +116,7 @@ notas: .word 9, 0, 0,
 .include "normalPoint.data"
 .include "ptMax.data"
 .include "mapa.data"
-.include "mapa3.data"
+.include "mp2rev.data"
 .include "col.data"
 .include "col2.data"
 .include "gato1.data"
@@ -170,14 +170,6 @@ ST:
 la a0, mapa
 jal mapRender
 
-#renderiza a colisao inicial do inimigo 1
-la a0, col
-la a1, enm1Pos
-lw a2, 4(a1)
-lw a1, 0(a1)
-la a3, enm1Col
-lb a3, 0(a3)
-jal collTileRender
 
 #início do game loop
 start:
@@ -221,6 +213,7 @@ la a0, playerPos
 la a1, playerMove
 jal changeEntityPos
 
+#move os inimgos
 la t0, enm1State
 lb t0, 0(t0)
 beq t0, zero, EP51
@@ -238,6 +231,13 @@ lb t0, 0(t0)
 beq t0, zero, EP64
 	jal normalMoveEnm3
 EP64:
+
+la t0, enm4State
+lb t0, 0(t0)
+beq t0, zero, EP68
+	jal normalMoveEnm4
+EP68:
+
 
 #vê se o player está colidindo com alguma coisa
 la a0, playerPos
@@ -329,6 +329,26 @@ beq t0, zero, EP63
 	jal tileRender
 	EP63:
 
+la, t0, enm4State
+lb t0, 0(t0)
+beq t0, zero, EP635
+
+	#desrenderiza o inimigo 3.
+	la a0, enm4Pos
+	lw a1, 12(a0)
+	lw a0, 8(a0)
+	la a2, mapa
+	jal unrenderTile
+
+	#renderiza o inimigo 3.
+	la a0, enm4Pos
+	lw a1, 4(a0)
+	lw a0, 0(a0)
+	la a2, gato1
+	addi a2, a2, 8
+	jal tileRender
+	EP635:
+
 #desrenderiza o player. do
 la a0, playerPos
 lw a1, 12(a0)
@@ -366,7 +386,7 @@ jal musica
 
 # espera um tempinho. do
 li a7, 32
-li a0, 15
+li a0, 16
 ecall
 #-------------------
 jal zero, start
@@ -1106,8 +1126,26 @@ EP43:
 la s0, enm4Col
 lb s0, 0(s0)
 bne s0, a0, EP44
-	li a7, 10
-	ecall
+	mv s6, ra
+
+	la t0, enm4State
+	sb zero, 0(t0)
+
+	la t0, enm4Pos
+	la a0, col
+	lw a1, 0(t0)
+	lw a2, 4(t0)
+	li a3, 0
+	jal collTileRender
+
+	la a0, enm3Pos
+	lw a1, 12(t0)
+	lw a0, 8(t0)
+	la a2, mapa
+	jal unrenderTile
+
+
+	mv ra, s6
 	ret
 EP44:
 
@@ -1702,27 +1740,39 @@ mv s6, ra
 la s11, enm2Pos
 la s10, enm2Move
 
+TER4:
+li s8, 0
 #tenta se mover pra a esquerda ou pra direita
-li a7, 30
+li a7, 41
 ecall
-andi t0, a0, 1
+andi t0, a0, 3
 
 lb a2, 0(s10)
 
-beq t0, zero, BBC
+bne t0, zero, BBC
 	addi a2, a2, 1
 	li t0, 4
 	bne a2, t0, EP56
 		addi a2, a2, -4
 	EP56:
-	jal zero, BTT
+	jal zero, FDS
 BBC:
+li t1, 1
+bne t0, t1, BTT
 	addi a2, a2, -1
 	li t0, -1
 	bne a2, t0, EP57
 		addi a2, a2, 4
 	EP57:
+	jal zero, FDS
 BTT:
+li t1, 2
+bne t0, t1, KSS
+	li s8, 1
+	jal zero, TER1
+KSS:
+	jal TER4
+FDS:
 
 lw a0, 0(s11)
 lw a1, 4(s11)
@@ -1749,6 +1799,7 @@ beq a0, zero, EP60
 	jal zero, LOCOM2
 EP60:
 
+TER1:
 #tenta se mover para onde eu já estava indo
 
 lw a0, 0(s11)
@@ -1760,6 +1811,16 @@ jal checkMapCollision
 beq a0, zero, EP55
 	jal LOCOM2
 EP55:
+
+beq s8, zero, TER2
+	li s8, 0
+	addi a2, a2, 1
+	li t2, 4
+	bne a2, t2, TER3
+		li a2, 0
+	TER3:
+	jal zero, FDS
+TER2:
 
 #tenta se mover para o oposto de onde eu estava indo
 
@@ -1813,7 +1874,7 @@ EP65:
 addi t0, t0, -1
 sw t0, 0(s9)
 #tenta se mover pra a esquerda ou pra direita
-li a7, 30
+li a7, 41
 ecall
 andi t0, a0, 1
 
@@ -1972,7 +2033,7 @@ ret
 levelTransition:
 
 la t0, mapa
-la t1, col2
+la t1, mp2rev
 
 li t2, 76800
 add t2, t2, t0
@@ -2040,7 +2101,24 @@ sw t1, 12(t0)
 sw t2, 0(t0)
 sw t2, 8(t0)
 
+la t0, enm3TpAddress
+li t1, 16
+sw t1, 0(t0)
+sw t1, 4(t0)
+
 la t0, enm3State
+li t1, 1
+sb t1, 0(t0)
+
+la t0, enm4Pos
+li t1, 128
+li t2, 16
+sw t1 0(t0)
+sw t1, 8(t0)
+sw t2, 4(t0)
+sw t2, 12(s0)
+
+la t0, enm4State
 li t1, 1
 sb t1, 0(t0)
 
@@ -2123,4 +2201,126 @@ bgtu t1, s5, MF0
         sw s2, 4(s0)
         
 MF0:
+ret
+
+normalMoveEnm4:
+mv s6, ra
+la s11, enm4Pos
+la s10, enm4Move
+
+TER410:
+li s8, 0
+#tenta se mover pra a esquerda ou pra direita
+li a7, 41
+ecall
+andi t0, a0, 3
+
+lb a2, 0(s10)
+
+bne t0, zero, BBC10
+	addi a2, a2, 1
+	li t0, 4
+	bne a2, t0, EP5610
+		addi a2, a2, -4
+	EP5610:
+	jal zero, FDS10
+BBC10:
+li t1, 1
+bne t0, t1, BTT10
+	addi a2, a2, -1
+	li t0, -1
+	bne a2, t0, EP5710
+		addi a2, a2, 4
+	EP5710:
+	jal zero, FDS10
+BTT10:
+li t1, 2
+bne t0, t1, KSS10
+	li s8, 1
+	jal zero, TER110
+KSS10:
+	jal TER410
+FDS10:
+
+lw a0, 0(s11)
+lw a1, 4(s11)
+la a3, col
+jal checkMapCollision
+
+beq a0, zero, EP5810
+	sb a2, 0(s10)
+	jal zero, LOCOM210
+EP5810:
+
+addi a2, a2, -2
+bge a2, zero, EP5910
+	addi a2, a2, 4
+EP5910:
+
+lw a0, 0(s11)
+lw a1, 4(s11)
+la a3, col
+jal checkMapCollision
+
+beq a0, zero, EP6010
+	sb a2, 0(s10)
+	jal zero, LOCOM210
+EP6010:
+
+TER110:
+#tenta se mover para onde eu já estava indo
+
+lw a0, 0(s11)
+lw a1, 4(s11)
+lb a2, 0(s10)
+la a3, col
+jal checkMapCollision
+
+beq a0, zero, EP5510
+	jal LOCOM210
+EP5510:
+
+beq s8, zero, TER210
+	li s8, 0
+	addi a2, a2, 1
+	li t2, 4
+	bne a2, t2, TER310
+		li a2, 0
+	TER310:
+	jal zero, FDS10
+TER210:
+
+#tenta se mover para o oposto de onde eu estava indo
+
+lw a2, 0(s10)
+addi a2, a2, -2
+bge a2, zero, EP6110
+	addi a2, a2, 4
+EP6110:
+
+lw a0, 0(s11)
+lw a1, 4(s11)
+la a3, col
+jal checkMapCollision
+
+beq a0, zero, EP6210
+	sb a2, 0(s10)
+EP6210:
+
+LOCOM210:
+
+mv a0, s11
+mv a1, s10
+jal changeEntityPos
+
+la a0, col
+lw a1, 8(s11)
+lw a2, 12(s11)
+lb a3, 0(s10)
+la a4, enm4Col
+lb a4, 0(a4)
+jal moveEntityCollision
+
+
+mv ra, s6
 ret
