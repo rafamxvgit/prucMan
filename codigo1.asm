@@ -1031,7 +1031,12 @@ LP12:
 		mv a2, s11
 		li a3, 0
 		jal singlePtRender
-
+		li a0, 72
+		li a1, 200
+		li a2, 0
+		li a3, 80
+		li a7, 31
+		ecall
 		mv ra, s6
 		ret
 		
