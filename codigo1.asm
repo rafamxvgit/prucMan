@@ -2172,7 +2172,7 @@ sw t2, 4(t0)
 sw t2, 12(t0)
 
 la t0, enm1State
-li t1, 0
+li t1, 1
 sb t1, 0(t0)
 
 la t0, enm2Pos
@@ -2183,7 +2183,7 @@ sw t2, 0(t0)
 sw t2, 8(t0)
 
 la t0, enm2State
-li t1, 0
+li t1, 1
 sb t1, 0(t0)
 
 la t0, enm3Pos
@@ -2200,7 +2200,7 @@ sw t1, 0(t0)
 sw t1, 4(t0)
 
 la t0, enm3State
-li t1, 0
+li t1, 1
 sb t1, 0(t0)
 
 la t0, enm4Pos
@@ -2212,7 +2212,7 @@ sw t2, 4(t0)
 sw t2, 12(s0)
 
 la t0, enm4State
-li t1, 0
+li t1, 1
 sb t1, 0(t0)
 
 la t0, counterPts
@@ -2478,6 +2478,8 @@ bne s1, t1, SPF4
 	lw a2, 12(s0)
 	ret
 SPF4:
+lw a2, 12(s0)
+ret
 ret
 
 selectSpriteEnm2:
@@ -2507,7 +2509,8 @@ bne s1, t1, SPF8
 	lw a2, 12(s0)
 	ret
 SPF8:
-
+lw a2, 12(s0)
+ret
 ret
 
 selectSpriteEnm3:
@@ -2537,6 +2540,8 @@ bne s1, t1, SPN12
 	lw a2, 12(s0)
 	ret
 SPN12:
+lw a2, 12(s0)
+ret
 ret
 
 selectSpriteEnm4:
@@ -2566,4 +2571,6 @@ bne s1, t1, SPN16
 	lw a2, 12(s0)
 	ret
 SPN16:
+lw a2, 12(s0)
+ret
 ret
