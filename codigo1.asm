@@ -114,6 +114,11 @@ notas: .word 9, 0, 0,
 
 level: .word 0
 
+enm1Sprites: .word 0, 0, 0, 0
+enm2Sprites: .word 0, 0, 0, 0
+enm3Sprites: .word 0, 0, 0, 0
+enm4Sprites: .word 0, 0, 0, 0
+
 .include "nums.data"
 .include "normalPoint.data"
 .include "ptMax.data"
@@ -122,6 +127,22 @@ level: .word 0
 .include "col.data"
 .include "col2.data"
 .include "gato1.data"
+.include "gatoEsquerda.data"
+.include "gatoDireita.data"
+.include "gato1costas.data"
+.include "gato1frente.data"
+.include "gEsquerda2.data"
+.include "gDireita2.data"
+.include "gFrente2.data"
+.include "gCostas2.data"
+.include "gEsquerda3.data"
+.include "gDireita3.data"
+.include "gFrente3.data"
+.include "gCostas3.data"
+.include "gEsquerda4.data"
+.include "gDireita4.data"
+.include "gFrente4.data"
+.include "gCostas4.data"
 
 .include "p00.data"
 .include "p01.data"
@@ -135,9 +156,50 @@ level: .word 0
 
 .text
 
-#renderiza o mapa
-
 #---------------------
+la t0, enm1Sprites
+la t1, gatoDireita
+sw t1, 0(t0)
+#---------------------
+la t1, gatoEsquerda
+sw t1, 8(t0)
+#---------------------
+la t1, gato1frente
+sw t1, 12(t0)
+#---------------------
+la t1, gato1costas
+sw t1, 4(t0)
+#---------------------
+la t0, enm2Sprites
+la t1, gDireita2
+sw t1, 0(t0)
+la t1, gCostas2
+sw t1, 4(t0)
+la t1, gEsquerda2
+sw t1, 8(t0)
+la t1, gFrente2
+sw t1, 12(t0)
+#----------------------
+la t0, enm3Sprites
+la t1, gDireita3
+sw t1, 0(t0)
+la t1, gCostas3
+sw t1, 4(t0)
+la t1, gEsquerda3
+sw t1, 8(t0)
+la t1, gFrente3
+sw t1, 12(t0)
+#----------------------
+la t0, enm4Sprites
+la t1, gDireita4
+sw t1, 0(t0)
+la t1, gCostas4
+sw t1, 4(t0)
+la t1, gEsquerda4
+sw t1, 8(t0)
+la t1, gFrente4
+sw t1, 12(t0)
+
 la t0, anims0
 
 la t1, p00
@@ -298,12 +360,13 @@ beq t0, zero, EP52
 	lw a0, 8(a0)
 	la a2, mapa
 	jal unrenderTile
-
+	
+	jal selectSpriteEnm1
+	
 	#renderiza o inimigo 1. do
 	la a0, enm1Pos
 	lw a1, 4(a0)
 	lw a0, 0(a0)
-	la a2, gato1
 	addi a2, a2, 8
 	jal tileRender
 
@@ -320,11 +383,12 @@ beq t0, zero, EP53
 	la a2, mapa
 	jal unrenderTile
 
+	jal selectSpriteEnm2
+
 	#renderiza o inimigo 2.
 	la a0, enm2Pos
 	lw a1, 4(a0)
 	lw a0, 0(a0)
-	la a2, gato1
 	addi a2, a2, 8
 	jal tileRender
 	EP53:
@@ -340,11 +404,12 @@ beq t0, zero, EP63
 	la a2, mapa
 	jal unrenderTile
 
+	jal selectSpriteEnm3
+
 	#renderiza o inimigo 3.
 	la a0, enm3Pos
 	lw a1, 4(a0)
 	lw a0, 0(a0)
-	la a2, gato1
 	addi a2, a2, 8
 	jal tileRender
 	EP63:
@@ -360,11 +425,12 @@ beq t0, zero, EP635
 	la a2, mapa
 	jal unrenderTile
 
+	jal selectSpriteEnm4
+
 	#renderiza o inimigo 3.
 	la a0, enm4Pos
 	lw a1, 4(a0)
 	lw a0, 0(a0)
-	la a2, gato1
 	addi a2, a2, 8
 	jal tileRender
 	EP635:
@@ -2379,4 +2445,125 @@ addi t0, t0, 2
 andi t0, t0, 3
 sb t0, 0(s1)
 
+ret
+
+
+
+selectSpriteEnm1:
+
+la s0, enm1Sprites
+la s1, enm1Move
+
+lb s1, 0(s1)
+
+bne s1, zero, SPF1
+	lw a2, 0(s0)
+	ret
+SPF1:
+
+li t1, 1
+bne s1, t1, SPF3
+	lw a2, 4(s0)
+	ret
+SPF3:
+
+li t1, 2
+bne s1, t1, SPF2
+	lw a2, 8(s0)
+	ret
+SPF2:
+
+li t1, 3
+bne s1, t1, SPF4
+	lw a2, 12(s0)
+	ret
+SPF4:
+ret
+
+selectSpriteEnm2:
+la s0, enm2Sprites
+la s1, enm2Move
+lb s1, 0(s1)
+
+bne s1, zero, SPF5
+	lw a2, 0(s0)
+	ret
+SPF5:
+
+li t1, 1
+bne s1, t1, SPF6
+	lw a2, 4(s0)
+	ret
+SPF6:
+
+li t1, 2
+bne s1, t1, SPF7
+	lw a2, 8(s0)
+	ret
+SPF7:
+
+li t1, 3
+bne s1, t1, SPF8
+	lw a2, 12(s0)
+	ret
+SPF8:
+
+ret
+
+selectSpriteEnm3:
+la s0, enm3Sprites
+la s1, enm3Move
+lb s1, 0(s1)
+
+bne s1, zero, SPF9
+	lw a2, 0(s0)
+	ret
+SPF9:
+
+li t1, 1
+bne s1, t1, SPF10
+	lw a2, 4(s0)
+	ret
+SPF10:
+
+li t1, 2
+bne s1, t1, SPF11
+	lw a2, 8(s0)
+	ret
+SPF11:
+
+li t1, 3
+bne s1, t1, SPN12
+	lw a2, 12(s0)
+	ret
+SPN12:
+ret
+
+selectSpriteEnm4:
+la s0, enm4Sprites
+la s1, enm4Move
+lb s1, 0(s1)
+
+bne s1, zero, SPF13
+	lw a2, 0(s0)
+	ret
+SPF13:
+
+li t1, 1
+bne s1, t1, SPF14
+	lw a2, 4(s0)
+	ret
+SPF14:
+
+li t1, 2
+bne s1, t1, SPF15
+	lw a2, 8(s0)
+	ret
+SPF15:
+
+li t1, 3
+bne s1, t1, SPN16
+	lw a2, 12(s0)
+	ret
+SPN16:
 ret
