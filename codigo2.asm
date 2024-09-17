@@ -17,24 +17,24 @@ anims2: .word 0,
 enm1Pos: .word 288, 16, 288, 16
 enm1Move: .byte 3
 enm1Col: .byte 100
-enm1State: .byte 0
+enm1State: .byte 1
 
 enm2Pos: .word 48, 16, 48, 16
 enm2Move: .byte 0
 enm2Col: .byte 101
-enm2State: .byte 0
+enm2State: .byte 1
 
 enm3Pos: .word 48, 208, 48, 208
 enm3Move: .byte 0
 enm3Col: .byte 102
-enm3State: .byte 0
+enm3State: .byte 1
 enm3TpTimer: .word 500, 80
 enm3TpAddress: .word 16, 16
 
 enm4Pos: .word 128, 16, 128, 16
 enm4Move: .byte 0
 enm4Col: .byte 103
-enm4State: .byte 0
+enm4State: .byte 1
 
 counterPts: .byte 0
 counterNaoMexe: .byte 0
